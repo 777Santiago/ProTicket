@@ -32,7 +32,7 @@ export function Header({ currentView, onNavigate, onOpenLogin, onOpenSignup }: H
     <header className="border-b bg-white sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div 
+          <div
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => onNavigate("home")}
           >
@@ -41,7 +41,7 @@ export function Header({ currentView, onNavigate, onOpenLogin, onOpenSignup }: H
             </div>
             <span className="text-xl">ProTicket</span>
           </div>
-          
+
           <nav className="flex items-center gap-4">
             <Button
               variant={currentView === "home" ? "default" : "ghost"}
@@ -49,7 +49,13 @@ export function Header({ currentView, onNavigate, onOpenLogin, onOpenSignup }: H
             >
               {t("header.home")}
             </Button>
-            
+            <Button
+              variant={currentView === "test" ? "default" : "ghost"}
+              onClick={() => onNavigate("test")}
+            >
+              Test API
+            </Button>
+
             {user?.role === "organizer" && (
               <Button
                 variant={currentView === "dashboard" ? "default" : "ghost"}
@@ -67,10 +73,10 @@ export function Header({ currentView, onNavigate, onOpenLogin, onOpenSignup }: H
                 {t("header.myTickets")}
               </Button>
             )}
-            
+
             <div className="flex items-center gap-2 ml-4 pl-4 border-l">
               <LanguageSelector />
-              
+
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

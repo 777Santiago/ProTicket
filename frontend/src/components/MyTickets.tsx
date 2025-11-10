@@ -25,6 +25,7 @@ interface Purchase {
 }
 
 export function MyTickets() {
+  const { user } = useAuth();
   const { accessToken } = useAuth();
   const { t } = useLanguage();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -35,34 +36,42 @@ export function MyTickets() {
   }, [accessToken]);
 
   async function fetchMyTickets() {
-    if (!accessToken) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-45ce65c6/purchases/my-tickets`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(t("myTickets.errorLoading"));
-      }
-
-      const data = await response.json();
-      setPurchases(data.purchases || []);
-    } catch (error) {
-      console.error("Error fetching tickets:", error);
-      toast.error(t("myTickets.errorLoading"));
-    } finally {
-      setLoading(false);
-    }
+  if (!accessToken || !user) {
+    setLoading(false);
+    return;
   }
+
+  try {
+    // Obtener órdenes del usuario
+    const { ordersService } = await import("../services/orders.service");
+    const orders = await ordersService.getByUser(user.id, accessToken);
+    
+    console.log("Orders fetched:", orders);
+
+    // Transformar órdenes a formato de "purchases"
+    const purchasesData = orders.map(order => ({
+      id: order.id_order.toString(),
+      eventId: order.event_id.toString(),
+      quantity: order.quantity,
+      totalPrice: order.total_price,
+      confirmationCode: `PT-${order.id_order}`,
+      purchaseDate: order.created_at,
+      buyerName: user.name,
+      buyerEmail: user.email,
+      eventTitle: "Evento",
+      eventDate: "",
+      eventTime: "",
+      eventLocation: "",
+    }));
+
+    setPurchases(purchasesData);
+  } catch (error) {
+    console.error("Error fetching tickets:", error);
+    toast.error(t("myTickets.errorLoading"));
+  } finally {
+    setLoading(false);
+  }
+}
 
   if (loading) {
     return (
