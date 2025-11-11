@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:mysql://mysql_auth:3306/proticket_auth?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: auth_user
+    password: auth_pass
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+server:
+  port: 8080
+  servlet:
+    context-path: /auth
+
+jwt:
+  secret: e7b40ad12b39acb16f4d6b8216c815b9c3e5db02d45f7c1f7b67ac43f2f3c6fd
+  expiration: 3600000
+
+logging:
+  level:
+    org.springframework: INFO
+    com.proticket.auth: DEBUG
