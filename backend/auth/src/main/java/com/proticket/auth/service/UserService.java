@@ -21,12 +21,12 @@ public class UserService {
   public User register(String email, String rawPassword, String roleName) {
     // Verificar si el email ya existe
     if (users.existsByEmail(email)) {
-      throw new IllegalArgumentException("El email ya está registrado. Por favor, inicia sesión o usa otro email.");
+      throw new IllegalArgumentException("Este correo electrónico ya está registrado. Por favor, inicia sesión o usa otro correo.");
     }
     
     // Verificar que el rol existe
     Role role = roles.findByRoleName(roleName)
-        .orElseThrow(() -> new IllegalArgumentException("Rol no válido"));
+        .orElseThrow(() -> new IllegalArgumentException("Tipo de cuenta no válido"));
     
     User u = User.builder()
         .email(email)
@@ -39,11 +39,11 @@ public class UserService {
   public User authenticate(String email, String password) {
     // Buscar usuario por email
     User u = users.findByEmail(email)
-        .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado. Por favor, verifica tu email o regístrate."));
+        .orElseThrow(() -> new IllegalArgumentException("No existe una cuenta con este correo electrónico. Por favor, verifica tu correo o regístrate."));
     
     // Verificar contraseña
     if (!encoder.matches(password, u.getPasswordHash())) {
-      throw new IllegalArgumentException("Contraseña incorrecta. Por favor, inténtalo de nuevo.");
+      throw new IllegalArgumentException("Contraseña incorrecta. Por favor, verifica tu contraseña e inténtalo de nuevo.");
     }
     
     // Actualizar último login
