@@ -33,7 +33,11 @@ export function LoginModal({ open, onClose, onSwitchToSignup, onSwitchToForgotPa
       setPassword("");
       onClose();
     } catch (error: any) {
-      toast.error(error?.message || t("message.loginRequired"));
+      console.error("Login error:", error);
+      
+      // Mostrar el mensaje de error específico
+      const errorMessage = error?.message || "Error al iniciar sesión";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

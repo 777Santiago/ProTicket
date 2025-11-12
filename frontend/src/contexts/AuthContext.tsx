@@ -69,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const profile = await response.json();
       if (profile && profile.id) {
+        console.log("✅ Profile loaded:", profile);
+        console.log("✅ Access token set:", token.substring(0, 20) + "...");
         setUser(profile);
         setAccessToken(token);
       }
@@ -81,6 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string) {
     try {
+      console.log("🔐 Iniciando sesión...");
+      
       // Check if account is locked
       const checkResponse = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-45ce65c6/auth/check-login`,
@@ -123,7 +127,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ email }),
           }
         );
-        throw error;
+        
+        // Lanzar error con mensaje específico
+        if (error.message.includes("Invalid login credentials")) {
+          throw new Error("Credenciales inválidas. Por favor, verifica tu correo y contraseña.");
+        } else if (error.message.includes("Email not confirmed")) {
+          throw new Error("Por favor, confirma tu correo electrónico antes de iniciar sesión.");
+        } else {
+          throw new Error(error.message);
+        }
       }
 
       // Reset login attempts on successful login
@@ -140,16 +152,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
 
       if (data?.session?.access_token) {
+        console.log("✅ Login exitoso, cargando perfil...");
         await fetchUserProfile(data.session.access_token);
+        console.log("✅ Perfil cargado, user:", user);
+        console.log("✅ Access token disponible:", !!accessToken);
       }
     } catch (error: any) {
-      console.error("Sign in error:", error);
-      throw new Error(error?.message || "Error al iniciar sesión");
+      console.error("❌ Sign in error:", error);
+      throw error;
     }
   }
 
   async function signUp(email: string, password: string, name: string, role: "buyer" | "organizer") {
     try {
+      console.log("📝 Registrando usuario...");
+      
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-45ce65c6/auth/signup`,
         {
@@ -162,33 +179,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       );
 
+      // Leer la respuesta UNA SOLA VEZ
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al crear cuenta");
+        // El servidor ya devolvió un mensaje de error en responseData.error
+        throw new Error(responseData.error || "Error al crear cuenta");
       }
 
-      // Auto sign in after signup
+      console.log("✅ Usuario registrado, iniciando sesión automáticamente...");
+
+      // Auto sign in after signup - IMPORTANTE: esperar a que termine completamente
       await signIn(email, password);
+      
+      // Pequeña pausa para asegurar que el estado se actualice
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log("✅ Auto-login completado");
+      console.log("✅ User después de signup:", user);
+      console.log("✅ Access token después de signup:", !!accessToken);
+      
     } catch (error: any) {
-      console.error("Sign up error:", error);
-      throw error;
+      console.error("❌ Sign up error:", error);
+      
+      // Si el error ya tiene un mensaje específico, usarlo
+      if (error.message) {
+        throw error;
+      } else {
+        throw new Error("Error al crear cuenta. Por favor, inténtalo de nuevo.");
+      }
     }
   }
 
   async function signOut() {
     try {
+      console.log("👋 Cerrando sesión...");
       const supabase = createClient();
       if (supabase) {
         await supabase.auth.signOut();
       }
       setUser(null);
       setAccessToken(null);
+      console.log("✅ Sesión cerrada");
     } catch (error) {
       console.error("Sign out error:", error);
       setUser(null);
       setAccessToken(null);
     }
   }
+
+  // Log cuando cambian el user o accessToken
+  useEffect(() => {
+    if (user) {
+      console.log("📊 Estado actualizado - User:", user.email, "Role:", user.role);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (accessToken) {
+      console.log("🔑 Estado actualizado - Access Token disponible:", accessToken.substring(0, 20) + "...");
+    } else {
+      console.log("🔑 Estado actualizado - No hay Access Token");
+    }
+  }, [accessToken]);
 
   return (
     <AuthContext.Provider value={{ user, accessToken, loading, signIn, signUp, signOut }}>

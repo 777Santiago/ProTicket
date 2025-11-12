@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
-import { projectId } from "../utils/supabase/info";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -25,60 +24,87 @@ interface Purchase {
 }
 
 export function MyTickets() {
-  const { user } = useAuth();
-  const { accessToken } = useAuth();
+  const { user, accessToken } = useAuth();
   const { t } = useLanguage();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMyTickets();
   }, [accessToken]);
 
   async function fetchMyTickets() {
-  if (!accessToken || !user) {
-    setLoading(false);
-    return;
+    if (!accessToken || !user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setError(null);
+      console.log("Fetching tickets for user:", user.id);
+      
+      const { ordersService } = await import("../services/orders.service");
+      const orders = await ordersService.getByUser(user.id, accessToken);
+      
+      console.log("Orders fetched:", orders);
+
+      if (!orders || orders.length === 0) {
+        setPurchases([]);
+        setLoading(false);
+        return;
+      }
+
+      // Transformar órdenes a formato de "purchases"
+      const purchasesData = orders.map(order => ({
+        id: order.id_order.toString(),
+        eventId: order.event_id.toString(),
+        quantity: order.quantity,
+        totalPrice: Number(order.total_price),
+        confirmationCode: `PT-${order.id_order}`,
+        purchaseDate: order.created_at,
+        buyerName: user.name,
+        buyerEmail: user.email,
+        eventTitle: "Evento",
+        eventDate: "",
+        eventTime: "",
+        eventLocation: "",
+      }));
+
+      setPurchases(purchasesData);
+    } catch (error: any) {
+      console.error("Error fetching tickets:", error);
+      setError(error.message);
+      // No mostrar toast de error si simplemente no hay tickets
+      if (!error.message.includes("no orders")) {
+        toast.error(t("myTickets.errorLoading"));
+      }
+    } finally {
+      setLoading(false);
+    }
   }
-
-  try {
-    // Obtener órdenes del usuario
-    const { ordersService } = await import("../services/orders.service");
-    const orders = await ordersService.getByUser(user.id, accessToken);
-    
-    console.log("Orders fetched:", orders);
-
-    // Transformar órdenes a formato de "purchases"
-    const purchasesData = orders.map(order => ({
-      id: order.id_order.toString(),
-      eventId: order.event_id.toString(),
-      quantity: order.quantity,
-      totalPrice: order.total_price,
-      confirmationCode: `PT-${order.id_order}`,
-      purchaseDate: order.created_at,
-      buyerName: user.name,
-      buyerEmail: user.email,
-      eventTitle: "Evento",
-      eventDate: "",
-      eventTime: "",
-      eventLocation: "",
-    }));
-
-    setPurchases(purchasesData);
-  } catch (error) {
-    console.error("Error fetching tickets:", error);
-    toast.error(t("myTickets.errorLoading"));
-  } finally {
-    setLoading(false);
-  }
-}
 
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="mb-8">{t("myTickets.title")}</h1>
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>
+      </div>
+    );
+  }
+
+  if (error && !error.includes("no orders")) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="mb-8">{t("myTickets.title")}</h1>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-red-500 mb-4">{t("myTickets.errorLoading")}</p>
+            <Button onClick={fetchMyTickets}>Reintentar</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -90,7 +116,9 @@ export function MyTickets() {
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-gray-500 mb-4">{t("myTickets.noTicketsYet")}</p>
-            <Button onClick={() => window.location.reload()}>{t("myTickets.viewEvents")}</Button>
+            <Button onClick={() => window.location.href = "/"}>
+              {t("myTickets.viewEvents")}
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -107,7 +135,9 @@ export function MyTickets() {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="mb-2">{purchase.eventTitle || t("myTickets.event")}</CardTitle>
+                  <CardTitle className="mb-2">
+                    {purchase.eventTitle || t("myTickets.event")}
+                  </CardTitle>
                   <Badge>{t("myTickets.confirmed")}</Badge>
                 </div>
               </div>
@@ -115,19 +145,28 @@ export function MyTickets() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">{t("myTickets.confirmationCode")}</p>
+                  <p className="text-sm text-gray-600">
+                    {t("myTickets.confirmationCode")}
+                  </p>
                   <p className="font-mono">{purchase.confirmationCode}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">{t("myTickets.quantity")}</p>
-                  <p>{purchase.quantity} {purchase.quantity === 1 ? t("myTickets.ticket") : t("myTickets.tickets")}</p>
+                  <p>
+                    {purchase.quantity}{" "}
+                    {purchase.quantity === 1
+                      ? t("myTickets.ticket")
+                      : t("myTickets.tickets")}
+                  </p>
                 </div>
               </div>
 
               {purchase.eventDate && (
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span>{purchase.eventDate} • {purchase.eventTime}</span>
+                  <span>
+                    {purchase.eventDate} • {purchase.eventTime}
+                  </span>
                 </div>
               )}
 
@@ -153,7 +192,11 @@ export function MyTickets() {
               </div>
 
               <div className="pt-2">
-                <Button variant="outline" className="w-full" onClick={() => window.print()}>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => window.print()}
+                >
                   <Download className="h-4 w-4 mr-2" />
                   {t("myTickets.downloadPrint")}
                 </Button>

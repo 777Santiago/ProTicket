@@ -27,16 +27,16 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
 
   const validatePassword = (pwd: string) => {
     if (pwd.length < 8) {
-      return "Password must be at least 8 characters long";
+      return "La contraseña debe tener al menos 8 caracteres";
     }
     if (!/[A-Z]/.test(pwd)) {
-      return "Password must contain at least one uppercase letter";
+      return "La contraseña debe contener al menos una letra mayúscula";
     }
     if (!/[a-z]/.test(pwd)) {
-      return "Password must contain at least one lowercase letter";
+      return "La contraseña debe contener al menos una letra minúscula";
     }
     if (!/[0-9]/.test(pwd)) {
-      return "Password must contain at least one number";
+      return "La contraseña debe contener al menos un número";
     }
     return "";
   };
@@ -72,7 +72,11 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
       setPasswordError("");
       onClose();
     } catch (error: any) {
-      toast.error(error?.message || t("message.loginRequired"));
+      console.error("Signup error:", error);
+      
+      // Mostrar el mensaje de error específico
+      const errorMessage = error?.message || "Error al crear cuenta";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

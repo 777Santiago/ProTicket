@@ -115,16 +115,20 @@ function AppContent() {
   };
 
   const handlePurchaseComplete = async (data: any) => {
-    if (!accessToken || !selectedEvent) return;
+    if (!accessToken || !selectedEvent || !user) {
+      toast.error("Usuario no autenticado");
+      return;
+    }
 
     try {
-      console.log("Creating order...", data);
+      console.log("Creating order with buyer_id:", user.id);
 
-      // Crear la orden
+      // Crear la orden con el buyer_id del usuario autenticado
       const order = await ordersService.create(
         {
           event_id: parseInt(selectedEvent.id),
           quantity: data.quantity,
+          buyer_id: user.id, // AGREGADO - enviar el ID del usuario
         },
         accessToken
       );
@@ -170,8 +174,13 @@ function AppContent() {
   };
 
   const handleCreateEvent = async (eventData: any) => {
-    if (!accessToken) {
+    if (!accessToken || !user) {
       toast.error(t("message.loginRequired"));
+      return;
+    }
+
+    if (user.role !== "organizer") {
+      toast.error(t("message.organizersOnly"));
       return;
     }
 
@@ -189,13 +198,27 @@ function AppContent() {
       toast.success(t("message.eventCreated"));
     } catch (error: any) {
       console.error("Create event error:", error);
-      toast.error(error.message || "Error al crear evento");
+      const errorMessage = error.message || "Error al crear evento";
+
+      // Extraer mensaje del servidor si existe
+      if (errorMessage.includes("403")) {
+        toast.error("No tienes permiso para crear eventos");
+      } else if (errorMessage.includes("401")) {
+        toast.error("Debes iniciar sesión para crear eventos");
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
 
   const handleUpdateEvent = async (eventData: any) => {
-    if (!accessToken || !editingEventId) {
+    if (!accessToken || !editingEventId || !user) {
       toast.error(t("message.loginRequired"));
+      return;
+    }
+
+    if (user.role !== "organizer") {
+      toast.error(t("message.organizersOnly"));
       return;
     }
 
@@ -211,13 +234,29 @@ function AppContent() {
       toast.success(t("message.eventUpdated"));
     } catch (error: any) {
       console.error("Update event error:", error);
-      toast.error(error.message || "Error al actualizar evento");
+      const errorMessage = error.message || "Error al actualizar evento";
+
+      // Extraer mensaje del servidor si existe
+      if (errorMessage.includes("403") || errorMessage.includes("permiso")) {
+        toast.error("No tienes permiso para editar este evento. Solo el creador puede modificarlo.");
+      } else if (errorMessage.includes("401")) {
+        toast.error("Debes iniciar sesión para editar eventos");
+      } else if (errorMessage.includes("404")) {
+        toast.error("Evento no encontrado");
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!accessToken) {
+    if (!accessToken || !user) {
       toast.error(t("message.loginRequired"));
+      return;
+    }
+
+    if (user.role !== "organizer") {
+      toast.error(t("message.organizersOnly"));
       return;
     }
 
@@ -231,7 +270,18 @@ function AppContent() {
       toast.success(t("message.eventDeleted"));
     } catch (error: any) {
       console.error("Delete event error:", error);
-      toast.error(error.message || "Error al eliminar evento");
+      const errorMessage = error.message || "Error al eliminar evento";
+
+      // Extraer mensaje del servidor si existe
+      if (errorMessage.includes("403") || errorMessage.includes("permiso")) {
+        toast.error("No tienes permiso para eliminar este evento. Solo el creador puede eliminarlo.");
+      } else if (errorMessage.includes("401")) {
+        toast.error("Debes iniciar sesión para eliminar eventos");
+      } else if (errorMessage.includes("404")) {
+        toast.error("Evento no encontrado");
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
 

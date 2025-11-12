@@ -13,18 +13,26 @@ export interface OrderAPI {
 export interface CreateOrderData {
   event_id: number;
   quantity: number;
+  buyer_id: string;
 }
 
 export const ordersService = {
   // Crear una orden
   create: async (orderData: CreateOrderData, accessToken: string): Promise<OrderAPI> => {
-    return await apiRequest<OrderAPI>('/orders/', {
+    console.log("Creating order with data:", orderData);
+    console.log("Stringified data:", JSON.stringify(orderData));
+    
+    const response = await apiRequest<OrderAPI>('/orders/', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(orderData),
     });
+    
+    console.log("Order created:", response);
+    return response;
   },
 
   // Obtener orden por ID
@@ -38,10 +46,15 @@ export const ordersService = {
 
   // Obtener órdenes de un usuario
   getByUser: async (userId: string, accessToken: string): Promise<OrderAPI[]> => {
-    return await apiRequest<OrderAPI[]>(`/orders/user/${userId}`, {
+    console.log("Fetching orders for user:", userId);
+    
+    const response = await apiRequest<OrderAPI[]>(`/orders/user/${userId}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
       },
     });
+    
+    console.log("Orders fetched:", response);
+    return response;
   },
 };
