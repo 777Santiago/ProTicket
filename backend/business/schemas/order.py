@@ -8,7 +8,7 @@ class OrderBase(BaseModel):
     quantity: int
 
 class OrderCreate(OrderBase):
-    pass
+    buyer_id: UUID  # AGREGADO - ahora se envía desde el frontend
 
 class OrderUpdate(BaseModel):
     status: str

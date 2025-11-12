@@ -12,7 +12,8 @@ class EventBase(BaseModel):
     status: Optional[str] = "active"
 
 class EventCreate(EventBase):
-    organizer_id: int   
+    organizer_id: int
+    creator_user_id: Optional[str] = None  # NUEVO
 
 class EventUpdate(BaseModel):
     title: Optional[str] = None
@@ -26,6 +27,7 @@ class EventUpdate(BaseModel):
 class EventOut(EventBase):
     id_event: int       
     organizer_id: int
+    creator_user_id: Optional[str] = None  # NUEVO
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

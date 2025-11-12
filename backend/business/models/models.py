@@ -11,7 +11,7 @@ class Organizer(Base):
     __tablename__ = "organizers"
 
     id_organizer = Column(Integer, primary_key=True, index=True)
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)  # UUID del Auth Service
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     organization_name = Column(String(100), nullable=False)
     status = Column(String(20), default="draft")
     created_at = Column(TIMESTAMP, server_default=func.now())
@@ -24,6 +24,7 @@ class Event(Base):
 
     id_event = Column(Integer, primary_key=True, index=True)
     organizer_id = Column(Integer, ForeignKey("organizers.id_organizer", ondelete="CASCADE"), nullable=False)
+    creator_user_id = Column(UUID(as_uuid=True), nullable=True, index=True)  # NUEVO: ID del usuario creador
     title = Column(String(150), nullable=False)
     description = Column(Text)
     location = Column(String(150))
@@ -41,7 +42,7 @@ class Order(Base):
     __tablename__ = "orders"
 
     id_order = Column(Integer, primary_key=True, index=True)
-    buyer_id = Column(UUID(as_uuid=True), nullable=False)  # UUID del Auth Service
+    buyer_id = Column(UUID(as_uuid=True), nullable=False)
     event_id = Column(Integer, ForeignKey("events.id_event", ondelete="CASCADE"), nullable=False)
     quantity = Column(Integer, nullable=False)
     total_price = Column(Numeric(12, 2), nullable=False)

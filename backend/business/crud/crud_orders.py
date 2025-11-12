@@ -38,7 +38,8 @@ def get_order_by_id(db: Session, order_id: int):
 
 
 def get_orders_by_user(db: Session, buyer_id: UUID):
-    return db.query(Order).filter(Order.buyer_id == buyer_id).all()
+    orders = db.query(Order).filter(Order.buyer_id == buyer_id).all()
+    return orders
 
 
 def update_order_status(db: Session, order_id: int, new_status: str):

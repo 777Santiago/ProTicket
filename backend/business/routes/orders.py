@@ -9,10 +9,8 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 
 @router.post("/", response_model=OrderOut, status_code=status.HTTP_201_CREATED)
 def create_order(order_data: OrderCreate, db: Session = Depends(get_db)):    
-    # buyer_id for testing purposes
-    dummy_buyer_id = UUID("123e4567-e89b-12d3-a456-426614174000")
-
-    new_order, error = crud_orders.create_order(db, order_data, dummy_buyer_id)
+    # Usar el buyer_id que viene en el schema OrderCreate
+    new_order, error = crud_orders.create_order(db, order_data, order_data.buyer_id)
     if error:
         raise HTTPException(status_code=400, detail=error)
     return new_order
@@ -26,10 +24,9 @@ def get_order(order_id: int, db: Session = Depends(get_db)):
 
 @router.get("/user/{buyer_id}", response_model=list[OrderOut])
 def get_orders_by_user(buyer_id: UUID, db: Session = Depends(get_db)):
+    # CAMBIO: Siempre retornar lista, incluso si está vacía
     orders = crud_orders.get_orders_by_user(db, buyer_id)
-    if not orders:        
-        raise HTTPException(status_code=404, detail="User has no orders")
-    return orders
+    return orders  # Retorna [] si no hay órdenes, no lanza error 404
 
 @router.put("/{order_id}/status", response_model=OrderOut)
 def update_order_status(order_id: int, update_data: OrderUpdate, db: Session = Depends(get_db)):
