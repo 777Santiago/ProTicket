@@ -1,0 +1,3 @@
+com/proticket/auth/ProticketAuthServiceApplicationTests.class
+com/proticket/auth/repository/UserRepositoryIT.class
+com/proticket/auth/service/JwtServiceTest.class

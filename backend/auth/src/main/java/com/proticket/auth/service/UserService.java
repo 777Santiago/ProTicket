@@ -19,9 +19,15 @@ public class UserService {
 
   @Transactional
   public User register(String email, String rawPassword, String roleName) {
-    if (users.existsByEmail(email)) throw new IllegalArgumentException("email already registered");
+    // Verificar si el email ya existe
+    if (users.existsByEmail(email)) {
+      throw new IllegalArgumentException("El email ya está registrado. Por favor, inicia sesión o usa otro email.");
+    }
+    
+    // Verificar que el rol existe
     Role role = roles.findByRoleName(roleName)
-        .orElseThrow(() -> new IllegalArgumentException("role not found"));
+        .orElseThrow(() -> new IllegalArgumentException("Rol no válido"));
+    
     User u = User.builder()
         .email(email)
         .passwordHash(encoder.encode(rawPassword))
@@ -31,10 +37,16 @@ public class UserService {
   }
 
   public User authenticate(String email, String password) {
+    // Buscar usuario por email
     User u = users.findByEmail(email)
-        .orElseThrow(() -> new IllegalArgumentException("invalid credentials"));
-    if (!encoder.matches(password, u.getPasswordHash()))
-      throw new IllegalArgumentException("invalid credentials");
+        .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado. Por favor, verifica tu email o regístrate."));
+    
+    // Verificar contraseña
+    if (!encoder.matches(password, u.getPasswordHash())) {
+      throw new IllegalArgumentException("Contraseña incorrecta. Por favor, inténtalo de nuevo.");
+    }
+    
+    // Actualizar último login
     u.setLastLogin(LocalDateTime.now());
     users.save(u);
     return u;
