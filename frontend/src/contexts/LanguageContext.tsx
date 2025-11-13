@@ -83,6 +83,9 @@ const translations = {
     "dashboard.confirmed": "Confirmado",
     "dashboard.vsLastMonth": "vs mes anterior",
     "dashboard.totalEvents": "eventos totales",
+    "dashboard.ofCapacity": "de capacidad",
+    "dashboard.noTicketsSold": "Sin ventas aún",
+    "dashboard.noEvents": "Sin eventos",
     
     // Create/Edit Event
     "createEvent.title": "Crear Nuevo Evento",
@@ -316,6 +319,9 @@ const translations = {
     "dashboard.confirmed": "Confirmed",
     "dashboard.vsLastMonth": "vs last month",
     "dashboard.totalEvents": "total events",
+    "dashboard.ofCapacity": "of capacity",
+    "dashboard.noTicketsSold": "No sales yet",
+    "dashboard.noEvents": "No events",
     
     // Create/Edit Event
     "createEvent.title": "Create New Event",

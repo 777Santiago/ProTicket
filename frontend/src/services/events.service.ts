@@ -30,6 +30,7 @@ export interface EventUI {
   organizerId?: string;
   creatorUserId?: string;
   status?: string;
+  start_datetime?: string; // Para poder parsear fecha/hora correctamente
 }
 
 // Convertir de formato API a formato UI
@@ -58,6 +59,7 @@ function transformEventFromAPI(apiEvent: EventAPI): EventUI {
     organizerName: "Organizador",
     creatorUserId: apiEvent.creator_user_id,
     status: apiEvent.status,
+    start_datetime: apiEvent.start_datetime, // Mantener el datetime original para edición
   };
 }
 
@@ -128,5 +130,22 @@ export const eventsService = {
         'Authorization': `Bearer ${accessToken}`,
       },
     });
+  },
+
+  // Obtener eventos por creador (organizador)
+  getByCreator: async (creatorUserId: string, accessToken: string): Promise<EventUI[]> => {
+    console.log(`🔍 Obteniendo eventos para creator: ${creatorUserId}`);
+    try {
+      const events = await apiRequest<EventAPI[]>(`/events/creator/${creatorUserId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+      console.log(`✅ Eventos recibidos del API:`, events);
+      return events.map(transformEventFromAPI);
+    } catch (error: any) {
+      console.error(`❌ Error en getByCreator:`, error);
+      throw error;
+    }
   },
 };

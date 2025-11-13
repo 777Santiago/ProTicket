@@ -30,15 +30,88 @@ export function CreateEventForm({ onBack, onSubmit, editEvent }: CreateEventForm
 
   useEffect(() => {
     if (editEvent) {
+      // Convertir fecha de formato legible a formato YYYY-MM-DD para el input
+      let dateValue = "";
+      if (editEvent.date) {
+        try {
+          // Si viene en formato legible (ej: "15 de Noviembre, 2025")
+          // Intentar parsearlo
+          const dateStr = editEvent.date;
+          if (dateStr.includes("de")) {
+            // Formato español: "15 de Noviembre, 2025"
+            const months: { [key: string]: string } = {
+              "enero": "01", "febrero": "02", "marzo": "03", "abril": "04",
+              "mayo": "05", "junio": "06", "julio": "07", "agosto": "08",
+              "septiembre": "09", "octubre": "10", "noviembre": "11", "diciembre": "12"
+            };
+            const parts = dateStr.replace(",", "").split(" ");
+            if (parts.length === 4) {
+              const day = parts[0].padStart(2, "0");
+              const month = months[parts[2].toLowerCase()] || "01";
+              const year = parts[3];
+              dateValue = `${year}-${month}-${day}`;
+            }
+          } else {
+            // Si ya viene en formato ISO o similar, intentar parsearlo directamente
+            const date = new Date(editEvent.start_datetime || editEvent.date);
+            if (!isNaN(date.getTime())) {
+              dateValue = date.toISOString().split("T")[0];
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing date:", e);
+        }
+      }
+
+      // Convertir hora de formato legible a formato HH:MM para el input
+      let timeValue = "";
+      if (editEvent.time) {
+        try {
+          // Si viene en formato legible (ej: "18:00")
+          const timeStr = editEvent.time;
+          if (timeStr.includes(":")) {
+            // Ya está en formato HH:MM o HH:MM:SS
+            timeValue = timeStr.substring(0, 5); // Tomar solo HH:MM
+          } else if (editEvent.start_datetime) {
+            // Extraer hora del datetime
+            const date = new Date(editEvent.start_datetime);
+            if (!isNaN(date.getTime())) {
+              const hours = date.getHours().toString().padStart(2, "0");
+              const minutes = date.getMinutes().toString().padStart(2, "0");
+              timeValue = `${hours}:${minutes}`;
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing time:", e);
+        }
+      }
+
+      // Si tenemos start_datetime, usarlo como fuente principal
+      if (editEvent.start_datetime && !dateValue) {
+        try {
+          const date = new Date(editEvent.start_datetime);
+          if (!isNaN(date.getTime())) {
+            dateValue = date.toISOString().split("T")[0];
+            if (!timeValue) {
+              const hours = date.getHours().toString().padStart(2, "0");
+              const minutes = date.getMinutes().toString().padStart(2, "0");
+              timeValue = `${hours}:${minutes}`;
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing start_datetime:", e);
+        }
+      }
+
       setFormData({
         title: editEvent.title || "",
         description: editEvent.description || "",
-        date: editEvent.date || "",
-        time: editEvent.time || "",
+        date: dateValue,
+        time: timeValue,
         location: editEvent.location || "",
-        category: editEvent.category || "",
+        category: editEvent.category || "Música",
         price: editEvent.price?.toString() || "",
-        totalTickets: editEvent.totalTickets?.toString() || "",
+        totalTickets: editEvent.totalTickets?.toString() || editEvent.availableTickets?.toString() || "",
         imageUrl: editEvent.image || "",
       });
     }

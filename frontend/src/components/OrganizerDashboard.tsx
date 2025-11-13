@@ -18,6 +18,7 @@ interface OrganizerDashboardProps {
     ticketsSold: number;
     totalTickets: number;
     revenue: number;
+    conversionRate?: number;
   }>;
   onCreateEvent: () => void;
   onEditEvent: (eventId: string) => void;
@@ -31,6 +32,14 @@ export function OrganizerDashboard({ events, onCreateEvent, onEditEvent, onDelet
   const totalRevenue = events.reduce((sum, event) => sum + event.revenue, 0);
   const totalTicketsSold = events.reduce((sum, event) => sum + event.ticketsSold, 0);
   const activeEvents = events.filter(e => e.status === "active").length;
+  
+  // Calcular tasa de conversión promedio (promedio de todos los eventos)
+  const conversionRates = events
+    .map(e => e.conversionRate || 0)
+    .filter(rate => rate > 0);
+  const averageConversionRate = conversionRates.length > 0
+    ? conversionRates.reduce((sum, rate) => sum + rate, 0) / conversionRates.length
+    : 0;
 
   const handleDeleteClick = (eventId: string) => {
     setEventToDelete(eventId);
@@ -67,7 +76,7 @@ export function OrganizerDashboard({ events, onCreateEvent, onEditEvent, onDelet
           <CardContent>
             <div className="text-2xl">${totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-gray-600 mt-1">
-              <span className="text-green-600">+12.5%</span> {t("dashboard.vsLastMonth")}
+              {events.length} {t("dashboard.totalEvents")}
             </p>
           </CardContent>
         </Card>
@@ -80,7 +89,10 @@ export function OrganizerDashboard({ events, onCreateEvent, onEditEvent, onDelet
           <CardContent>
             <div className="text-2xl">{totalTicketsSold}</div>
             <p className="text-xs text-gray-600 mt-1">
-              <span className="text-green-600">+8.2%</span> {t("dashboard.vsLastMonth")}
+              {totalTicketsSold > 0 
+                ? `${Math.round((totalTicketsSold / events.reduce((sum, e) => sum + e.totalTickets, 0)) * 100)}% ${t("dashboard.ofCapacity")}`
+                : t("dashboard.noTicketsSold")
+              }
             </p>
           </CardContent>
         </Card>
@@ -104,9 +116,12 @@ export function OrganizerDashboard({ events, onCreateEvent, onEditEvent, onDelet
             <TrendingUp className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl">68%</div>
+            <div className="text-2xl">{Math.round(averageConversionRate * 10) / 10}%</div>
             <p className="text-xs text-gray-600 mt-1">
-              <span className="text-green-600">+3.1%</span> {t("dashboard.vsLastMonth")}
+              {events.length > 0 
+                ? `${events.length} ${t("dashboard.totalEvents")}`
+                : t("dashboard.noEvents")
+              }
             </p>
           </CardContent>
         </Card>

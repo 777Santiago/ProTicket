@@ -57,4 +57,18 @@ export const ordersService = {
     console.log("Orders fetched:", response);
     return response;
   },
+
+  // Obtener órdenes de eventos de un organizador
+  getByOrganizer: async (creatorUserId: string, accessToken: string): Promise<OrderAPI[]> => {
+    console.log("Fetching orders for organizer:", creatorUserId);
+    
+    const response = await apiRequest<OrderAPI[]>(`/orders/organizer/${creatorUserId}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+    
+    console.log("Organizer orders fetched:", response);
+    return response;
+  },
 };

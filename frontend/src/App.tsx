@@ -21,7 +21,6 @@ import { useLanguage } from "./contexts/LanguageContext";
 import { eventsService } from "./services/events.service";
 import { ordersService } from "./services/orders.service";
 import { ticketsService } from "./services/tickets.service";
-import { TestConnection } from "./components/TestConnection";
 
 function AppContent() {
   const { user, accessToken, loading: authLoading } = useAuth();
@@ -39,7 +38,7 @@ function AppContent() {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const selectedEvent = events.find(e => e.id === selectedEventId) || myEvents.find(e => e.id === selectedEventId);
-  const editingEvent = myEvents.find(e => e.id === editingEventId);
+  const [editingEvent, setEditingEvent] = useState<any>(null);
 
   useEffect(() => {
     fetchEvents();
@@ -70,27 +69,74 @@ function AppContent() {
   }
 
   async function fetchMyEvents() {
-    if (!accessToken) return;
+    if (!accessToken || !user) {
+      console.log("⚠️ fetchMyEvents: No accessToken o user", { hasToken: !!accessToken, hasUser: !!user });
+      return;
+    }
 
     try {
-      // Por ahora, obtenemos todos los eventos
-      // TODO: filtrar por organizador cuando tengamos autenticación completa
-      const allEvents = await eventsService.getAll();
+      console.log("📊 Fetching my events for user:", user.id);
+      
+      // Obtener eventos del organizador actual
+      const myEventsData = await eventsService.getByCreator(user.id, accessToken);
+      console.log("✅ Eventos obtenidos:", myEventsData.length, myEventsData);
+      
+      // Obtener órdenes de los eventos del organizador
+      let orders = [];
+      try {
+        orders = await ordersService.getByOrganizer(user.id, accessToken);
+        console.log("✅ Órdenes obtenidas:", orders.length);
+      } catch (orderError) {
+        console.warn("⚠️ Error obteniendo órdenes (continuando sin órdenes):", orderError);
+        // Continuar sin órdenes si hay error
+      }
+      
+      // Crear un mapa de event_id -> órdenes para calcular estadísticas
+      const ordersByEvent = new Map<number, typeof orders>();
+      orders.forEach(order => {
+        if (!ordersByEvent.has(order.event_id)) {
+          ordersByEvent.set(order.event_id, []);
+        }
+        ordersByEvent.get(order.event_id)!.push(order);
+      });
 
-      // Transformar a formato del dashboard
-      const dashboardEvents = allEvents.map(event => ({
-        id: event.id,
-        title: event.title,
-        date: event.date,
-        status: event.status || "active",
-        ticketsSold: 0, // TODO: calcular desde las órdenes
-        totalTickets: event.totalTickets,
-        revenue: 0, // TODO: calcular desde las órdenes
-      }));
+      // Transformar a formato del dashboard con estadísticas reales
+      const dashboardEvents = myEventsData.map(event => {
+        const eventOrders = ordersByEvent.get(parseInt(event.id)) || [];
+        const ticketsSold = eventOrders.reduce((sum, order) => sum + order.quantity, 0);
+        const revenue = eventOrders
+          .filter(order => order.status === "paid" || order.status === "confirmed")
+          .reduce((sum, order) => sum + parseFloat(order.total_price.toString()), 0);
+        
+        // Calcular tasa de conversión (tickets vendidos / capacidad total)
+        const conversionRate = event.totalTickets > 0 
+          ? (ticketsSold / event.totalTickets) * 100 
+          : 0;
 
+        return {
+          id: event.id,
+          title: event.title,
+          date: event.date,
+          status: event.status || "active",
+          ticketsSold,
+          totalTickets: event.totalTickets,
+          revenue,
+          conversionRate: Math.round(conversionRate * 10) / 10, // Redondear a 1 decimal
+        };
+      });
+
+      console.log("📊 Dashboard events preparados:", dashboardEvents);
       setMyEvents(dashboardEvents);
-    } catch (error) {
-      console.error("Error fetching my events:", error);
+    } catch (error: any) {
+      console.error("❌ Error fetching my events:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      });
+      toast.error(`Error al cargar tus eventos: ${error.message || "Error desconocido"}`);
+      // Establecer array vacío en caso de error para evitar mostrar datos antiguos
+      setMyEvents([]);
     }
   }
 
@@ -189,10 +235,16 @@ function AppContent() {
 
       const newEvent = await eventsService.create(eventData, accessToken);
 
-      console.log("Event created:", newEvent);
+      console.log("✅ Event created:", newEvent);
+      console.log("🔄 Refrescando eventos del dashboard...");
 
+      // Esperar un momento para que el backend procese
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       await fetchEvents();
       await fetchMyEvents();
+      
+      console.log("✅ Eventos refrescados");
       setCurrentView("dashboard");
       setEditingEventId(null);
       toast.success(t("message.eventCreated"));
@@ -231,6 +283,7 @@ function AppContent() {
       await fetchMyEvents();
       setCurrentView("dashboard");
       setEditingEventId(null);
+      setEditingEvent(null);
       toast.success(t("message.eventUpdated"));
     } catch (error: any) {
       console.error("Update event error:", error);
@@ -285,9 +338,22 @@ function AppContent() {
     }
   };
 
-  const handleEditEvent = (eventId: string) => {
-    setEditingEventId(eventId);
-    setCurrentView("edit");
+  const handleEditEvent = async (eventId: string) => {
+    if (!accessToken) {
+      toast.error(t("message.loginRequired"));
+      return;
+    }
+
+    try {
+      // Obtener el evento completo desde el backend
+      const eventData = await eventsService.getById(parseInt(eventId));
+      setEditingEvent(eventData);
+      setEditingEventId(eventId);
+      setCurrentView("edit");
+    } catch (error: any) {
+      console.error("Error fetching event for edit:", error);
+      toast.error("Error al cargar el evento para editar");
+    }
   };
 
   const handleNavigate = (view: string) => {
@@ -323,8 +389,6 @@ function AppContent() {
       />
 
       {currentView === "diagnostic" && <ServerDiagnostic />}
-
-      {currentView === "test" && <TestConnection />}
 
       {currentView === "home" && (
         <EventList
@@ -392,6 +456,7 @@ function AppContent() {
           onBack={() => {
             setCurrentView("dashboard");
             setEditingEventId(null);
+            setEditingEvent(null);
           }}
           onSubmit={handleUpdateEvent}
           editEvent={editingEvent}

@@ -49,12 +49,6 @@ export function Header({ currentView, onNavigate, onOpenLogin, onOpenSignup }: H
             >
               {t("header.home")}
             </Button>
-            <Button
-              variant={currentView === "test" ? "default" : "ghost"}
-              onClick={() => onNavigate("test")}
-            >
-              Test API
-            </Button>
 
             {user?.role === "organizer" && (
               <Button
