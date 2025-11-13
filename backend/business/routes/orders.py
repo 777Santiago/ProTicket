@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
+from typing import Optional
 from uuid import UUID
 from core.database import get_db
 from schemas.order import OrderCreate, OrderOut, OrderUpdate
@@ -34,3 +35,48 @@ def update_order_status(order_id: int, update_data: OrderUpdate, db: Session = D
     if error:
         raise HTTPException(status_code=400, detail=error)
     return order
+
+@router.get("/organizer/{creator_user_id}", response_model=list[OrderOut])
+def get_orders_by_organizer(
+    creator_user_id: UUID,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(None)
+):
+    """Obtener todas las órdenes de eventos creados por un organizador"""
+    try:
+        from routes.events import get_user_id_from_token
+        
+        print(f"\n=== OBTENER ÓRDENES POR ORGANIZADOR {creator_user_id} ===")
+        
+        # Verificar autenticación
+        user_id = get_user_id_from_token(authorization)
+        if not user_id:
+            print("❌ No se pudo extraer user_id del token")
+            raise HTTPException(
+                status_code=401,
+                detail="Debes iniciar sesión para ver tus órdenes"
+            )
+        
+        # Verificar que el usuario solo pueda ver sus propias órdenes
+        if str(user_id) != str(creator_user_id):
+            print(f"❌ IDs no coinciden: {user_id} != {creator_user_id}")
+            raise HTTPException(
+                status_code=403,
+                detail="No tienes permiso para ver las órdenes de otro usuario"
+            )
+        
+        print(f"✅ Usuario autorizado, obteniendo órdenes...")
+        orders = crud_orders.get_orders_by_organizer(db, creator_user_id)
+        print(f"✅ Órdenes encontradas: {len(orders)}")
+        return orders
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error inesperado en get_orders_by_organizer: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error interno del servidor: {str(e)}"
+        )

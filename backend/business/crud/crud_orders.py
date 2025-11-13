@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-
+from sqlalchemy import cast, String
 from sqlalchemy.exc import SQLAlchemyError
 from models.models import Order, Event
 from schemas.order import OrderCreate
@@ -59,3 +59,35 @@ def update_order_status(db: Session, order_id: int, new_status: str):
     except SQLAlchemyError as e:
         db.rollback()    
         return None, f"Error updating order status: {str(e)}"
+
+
+def get_orders_by_organizer(db: Session, creator_user_id: UUID):
+    """Obtener todas las órdenes de eventos creados por un organizador específico"""
+    try:
+        creator_id_str = str(creator_user_id)
+        print(f"🔍 Buscando órdenes para organizador: {creator_user_id}")
+        
+        # Obtener todos los eventos creados por este organizador
+        # Usar directamente cast a string ya que la columna en BD es VARCHAR
+        events = db.query(Event).filter(
+            cast(Event.creator_user_id, String) == creator_id_str
+        ).all()
+        
+        event_ids = [event.id_event for event in events]
+        print(f"✅ Eventos encontrados: {len(events)}, IDs: {event_ids}")
+        
+        if not event_ids:
+            print("⚠️ No hay eventos para este organizador")
+            return []
+        
+        # Obtener todas las órdenes de esos eventos
+        orders = db.query(Order).filter(Order.event_id.in_(event_ids)).all()
+        print(f"✅ Órdenes encontradas para organizador {creator_user_id}: {len(orders)}")
+        return orders
+    except Exception as e:
+        print(f"❌ Error en get_orders_by_organizer: {e}")
+        import traceback
+        traceback.print_exc()
+        # Hacer rollback en caso de error
+        db.rollback()
+        raise
