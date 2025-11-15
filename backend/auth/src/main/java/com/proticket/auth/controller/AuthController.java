@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping
@@ -72,5 +73,39 @@ public class AuthController {
   public ResponseEntity<Void> confirm(@Valid @RequestBody PasswordResetConfirmRequest req) {
     resetService.confirmReset(req.getToken(), req.getNewPassword());
     return ResponseEntity.noContent().build();
+  }
+
+  @Operation(summary="Obtener información básica de un usuario por ID")
+  @GetMapping("/user/{userId}")
+  public ResponseEntity<?> getUserInfo(@PathVariable String userId) {
+    try {
+      System.out.println("📊 Solicitando info del usuario: " + userId);
+      
+      User user = userService.getUserById(userId);
+      
+      if (user == null) {
+        System.out.println("❌ Usuario no encontrado: " + userId);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(Map.of("error", "Usuario no encontrado"));
+      }
+      
+      System.out.println("✅ Usuario encontrado: " + user.getEmail());
+      
+      // Obtener el nombre desde user_metadata si existe
+      String name = user.getEmail().split("@")[0]; // Por defecto usar email
+      
+      Map<String, Object> response = new HashMap<>();
+      response.put("id", user.getId());
+      response.put("name", name);
+      response.put("email", user.getEmail());
+      response.put("role", user.getRole().getRoleName());
+      
+      return ResponseEntity.ok(response);
+    } catch (Exception e) {
+      System.out.println("❌ Error obteniendo usuario: " + e.getMessage());
+      e.printStackTrace();
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(Map.of("error", "Error al obtener usuario: " + e.getMessage()));
+    }
   }
 }

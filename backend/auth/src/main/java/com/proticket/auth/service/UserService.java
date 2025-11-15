@@ -10,6 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;  // ESTE IMPORT ES EL QUE FALTABA
 
 @Service @RequiredArgsConstructor
 public class UserService {
@@ -50,5 +51,11 @@ public class UserService {
     u.setLastLogin(LocalDateTime.now());
     users.save(u);
     return u;
+  }
+
+  // MÉTODO NUEVO para obtener usuario por ID
+  public User getUserById(String userId) {
+    Optional<User> user = users.findById(userId);
+    return user.orElse(null);
   }
 }

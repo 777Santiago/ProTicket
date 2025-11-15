@@ -62,15 +62,16 @@ public SecurityFilterChain securityFilterChain(
       .cors(cors -> cors.configure(http))
       .csrf(csrf -> csrf.disable())
       .authorizeHttpRequests(auth -> auth
-          .requestMatchers(
-              "/register",
-              "/login",
-              "/password/**",
-              "/v3/api-docs/**",
-              "/swagger-ui/**",
-              "/swagger-ui.html"
-          ).permitAll()
-          .anyRequest().authenticated())
+        .requestMatchers(
+          "/register",
+          "/login",
+          "/password/**",
+          "/user/**",  // AGREGAR ESTA LÍNEA
+          "/v3/api-docs/**",
+          "/swagger-ui/**",
+          "/swagger-ui.html"
+        ).permitAll()
+      .anyRequest().authenticated())
       .httpBasic(Customizer.withDefaults());
 
   return http.build();
