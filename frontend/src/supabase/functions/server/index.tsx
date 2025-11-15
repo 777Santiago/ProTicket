@@ -123,8 +123,8 @@ seedInitialEvents();
 // Health check endpoint
 app.get("/make-server-45ce65c6/health", (c) => {
   console.log("Health check called");
-  return c.json({ 
-    status: "ok", 
+  return c.json({
+    status: "ok",
     timestamp: new Date().toISOString(),
     server: "ProTicket API",
     version: "1.0.0"
@@ -134,7 +134,7 @@ app.get("/make-server-45ce65c6/health", (c) => {
 // Root endpoint for testing
 app.get("/make-server-45ce65c6/", (c) => {
   console.log("Root endpoint called");
-  return c.json({ 
+  return c.json({
     message: "ProTicket API is running",
     endpoints: [
       "GET /health",
@@ -166,35 +166,35 @@ function validatePassword(password: string): { valid: boolean; error?: string } 
 async function checkLoginAttempts(email: string): Promise<{ allowed: boolean; remainingTime?: number }> {
   const attemptsKey = `login_attempts:${email}`;
   const attempts = await kv.get(attemptsKey) || { count: 0, lockedUntil: null };
-  
+
   // Check if account is locked
   if (attempts.lockedUntil && new Date(attempts.lockedUntil) > new Date()) {
     const remainingMs = new Date(attempts.lockedUntil).getTime() - new Date().getTime();
     const remainingMinutes = Math.ceil(remainingMs / 60000);
     return { allowed: false, remainingTime: remainingMinutes };
   }
-  
+
   // Reset if lock expired
   if (attempts.lockedUntil && new Date(attempts.lockedUntil) <= new Date()) {
     await kv.set(attemptsKey, { count: 0, lockedUntil: null });
   }
-  
+
   return { allowed: true };
 }
 
 async function recordFailedLogin(email: string) {
   const attemptsKey = `login_attempts:${email}`;
   const attempts = await kv.get(attemptsKey) || { count: 0, lockedUntil: null };
-  
+
   attempts.count += 1;
-  
+
   // Lock account after 5 failed attempts
   if (attempts.count >= 5) {
     const lockUntil = new Date();
     lockUntil.setMinutes(lockUntil.getMinutes() + 10);
     attempts.lockedUntil = lockUntil.toISOString();
   }
-  
+
   await kv.set(attemptsKey, attempts);
 }
 
@@ -262,7 +262,7 @@ app.post("/make-server-45ce65c6/auth/signup", async (c) => {
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      user_metadata: { 
+      user_metadata: {
         name,
         role,
       },
@@ -286,7 +286,7 @@ app.post("/make-server-45ce65c6/auth/signup", async (c) => {
 
     console.log(`User created successfully: ${email} with role ${role}`);
 
-    return c.json({ 
+    return c.json({
       message: "Usuario creado exitosamente",
       user: {
         id: data.user.id,
@@ -305,7 +305,7 @@ app.post("/make-server-45ce65c6/auth/signup", async (c) => {
 app.get("/make-server-45ce65c6/auth/profile", async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    
+
     if (!accessToken) {
       return c.json({ error: "Token no proporcionado" }, 401);
     }
@@ -331,11 +331,73 @@ app.get("/make-server-45ce65c6/auth/profile", async (c) => {
   }
 });
 
+// Get user profile by ID (para mostrar info en dashboard de organizador)
+app.get("/make-server-45ce65c6/auth/user-profile/:userId", async (c) => {
+  try {
+    const userId = c.req.param('userId');
+
+    console.log(`📊 Obteniendo perfil del usuario: ${userId}`);
+
+    if (!userId) {
+      return c.json({ error: "User ID requerido" }, 400);
+    }
+
+    // Buscar perfil en KV store
+    const profile = await kv.get(`user_profile:${userId}`);
+
+    if (!profile) {
+      console.log(`❌ Perfil no encontrado para: ${userId}`);
+      return c.json({ error: "Usuario no encontrado" }, 404);
+    }
+
+    console.log(`✅ Perfil encontrado: ${profile.name} (${profile.email})`);
+
+    // Retornar información pública
+    return c.json({
+      id: profile.id,
+      name: profile.name || profile.email?.split('@')[0] || "Usuario",
+      email: profile.email || "",
+      role: profile.role || "buyer",
+    });
+  } catch (error) {
+    console.log(`❌ Error obteniendo perfil: ${error}`);
+    return c.json({ error: "Error al obtener usuario" }, 500);
+  }
+});
+
+// Get user profile by ID (para mostrar info de compradores)
+app.get("/make-server-45ce65c6/auth/user/:userId", async (c) => {
+  try {
+    const userId = c.req.param('userId');
+
+    if (!userId) {
+      return c.json({ error: "User ID requerido" }, 400);
+    }
+
+    // Buscar perfil en KV store
+    const profile = await kv.get(`user_profile:${userId}`);
+
+    if (!profile) {
+      return c.json({ error: "Usuario no encontrado" }, 404);
+    }
+
+    // Retornar solo información pública (sin datos sensibles)
+    return c.json({
+      id: profile.id,
+      name: profile.name || "Usuario",
+      role: profile.role || "buyer",
+    });
+  } catch (error) {
+    console.log(`Get user by ID error: ${error}`);
+    return c.json({ error: "Error al obtener usuario" }, 500);
+  }
+});
+
 // Create event (organizers only)
 app.post("/make-server-45ce65c6/events", async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    
+
     if (!accessToken) {
       return c.json({ error: "No autorizado" }, 401);
     }
@@ -347,7 +409,7 @@ app.post("/make-server-45ce65c6/events", async (c) => {
     }
 
     const profile = await kv.get(`user_profile:${user.id}`);
-    
+
     if (profile?.role !== 'organizer') {
       return c.json({ error: "Solo los organizadores pueden crear eventos" }, 403);
     }
@@ -367,7 +429,7 @@ app.post("/make-server-45ce65c6/events", async (c) => {
     };
 
     await kv.set(`event:${eventId}`, event);
-    
+
     // Add to organizer's events list
     const organizerEvents = await kv.get(`organizer_events:${user.id}`) || [];
     organizerEvents.push(eventId);
@@ -399,7 +461,7 @@ app.get("/make-server-45ce65c6/events", async (c) => {
 app.get("/make-server-45ce65c6/events/my-events", async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    
+
     if (!accessToken) {
       return c.json({ error: "No autorizado" }, 401);
     }
@@ -426,7 +488,7 @@ app.get("/make-server-45ce65c6/events/my-events", async (c) => {
 app.post("/make-server-45ce65c6/purchases", async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    
+
     if (!accessToken) {
       return c.json({ error: "No autorizado" }, 401);
     }
@@ -441,7 +503,7 @@ app.post("/make-server-45ce65c6/purchases", async (c) => {
     const { eventId, quantity } = purchaseData;
 
     const event = await kv.get(`event:${eventId}`);
-    
+
     if (!event) {
       return c.json({ error: "Evento no encontrado" }, 404);
     }
@@ -451,7 +513,7 @@ app.post("/make-server-45ce65c6/purchases", async (c) => {
     }
 
     const purchaseId = Math.random().toString(36).substring(2, 10).toUpperCase();
-    
+
     const purchase = {
       id: purchaseId,
       userId: user.id,
@@ -491,7 +553,7 @@ app.post("/make-server-45ce65c6/purchases", async (c) => {
 app.get("/make-server-45ce65c6/purchases/my-tickets", async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    
+
     if (!accessToken) {
       return c.json({ error: "No autorizado" }, 401);
     }
@@ -518,7 +580,7 @@ app.get("/make-server-45ce65c6/purchases/my-tickets", async (c) => {
 app.put("/make-server-45ce65c6/events/:eventId", async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    
+
     if (!accessToken) {
       return c.json({ error: "No autorizado" }, 401);
     }
@@ -530,7 +592,7 @@ app.put("/make-server-45ce65c6/events/:eventId", async (c) => {
     }
 
     const profile = await kv.get(`user_profile:${user.id}`);
-    
+
     if (profile?.role !== 'organizer') {
       return c.json({ error: "Solo los organizadores pueden editar eventos" }, 403);
     }
@@ -577,7 +639,7 @@ app.put("/make-server-45ce65c6/events/:eventId", async (c) => {
 app.delete("/make-server-45ce65c6/events/:eventId", async (c) => {
   try {
     const accessToken = c.req.header('Authorization')?.split(' ')[1];
-    
+
     if (!accessToken) {
       return c.json({ error: "No autorizado" }, 401);
     }
@@ -589,7 +651,7 @@ app.delete("/make-server-45ce65c6/events/:eventId", async (c) => {
     }
 
     const profile = await kv.get(`user_profile:${user.id}`);
-    
+
     if (profile?.role !== 'organizer') {
       return c.json({ error: "Solo los organizadores pueden eliminar eventos" }, 403);
     }
@@ -631,7 +693,7 @@ app.delete("/make-server-45ce65c6/events/:eventId", async (c) => {
 // Global error handler
 app.onError((err, c) => {
   console.error("Global error handler:", err);
-  return c.json({ 
+  return c.json({
     error: "Internal server error",
     message: err.message,
     timestamp: new Date().toISOString()
@@ -656,8 +718,8 @@ app.post("/make-server-45ce65c6/auth/reset-password-request", async (c) => {
     }
 
     // Always return success to prevent email enumeration
-    return c.json({ 
-      message: "Si el email existe, recibirás instrucciones para restablecer tu contraseña" 
+    return c.json({
+      message: "Si el email existe, recibirás instrucciones para restablecer tu contraseña"
     });
   } catch (error) {
     console.log(`Password reset request error: ${error}`);

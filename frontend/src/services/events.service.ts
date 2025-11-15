@@ -12,6 +12,10 @@ export interface EventAPI {
   creator_user_id?: string;
   status: string;
   created_at?: string;
+  // NUEVOS CAMPOS
+  tickets_sold?: number;
+  available_tickets?: number;
+  revenue?: number;
 }
 
 export interface EventUI {
@@ -30,12 +34,21 @@ export interface EventUI {
   organizerId?: string;
   creatorUserId?: string;
   status?: string;
-  start_datetime?: string; // Para poder parsear fecha/hora correctamente
+  start_datetime?: string;
+  // NUEVOS CAMPOS
+  ticketsSold?: number;
+  revenue?: number;
 }
 
 // Convertir de formato API a formato UI
 function transformEventFromAPI(apiEvent: EventAPI): EventUI {
   const datetime = new Date(apiEvent.start_datetime);
+  
+  // Usar los valores calculados del backend
+  const ticketsSold = apiEvent.tickets_sold || 0;
+  const availableTickets = apiEvent.available_tickets !== undefined 
+    ? apiEvent.available_tickets 
+    : apiEvent.capacity || 0;
   
   return {
     id: apiEvent.id_event.toString(),
@@ -54,12 +67,14 @@ function transformEventFromAPI(apiEvent: EventAPI): EventUI {
     price: apiEvent.price,
     category: "Música",
     image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800",
-    availableTickets: apiEvent.capacity || 0,
+    availableTickets: availableTickets,  // Usar el valor calculado del backend
     totalTickets: apiEvent.capacity || 0,
     organizerName: "Organizador",
     creatorUserId: apiEvent.creator_user_id,
     status: apiEvent.status,
-    start_datetime: apiEvent.start_datetime, // Mantener el datetime original para edición
+    start_datetime: apiEvent.start_datetime,
+    ticketsSold: ticketsSold,  // NUEVO
+    revenue: apiEvent.revenue || 0,  // NUEVO
   };
 }
 

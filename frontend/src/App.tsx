@@ -46,8 +46,22 @@ function AppContent() {
 
   useEffect(() => {
     if (user?.role === "organizer" && accessToken) {
+      console.log("📊 Usuario organizador detectado, cargando eventos...");
       fetchMyEvents();
     }
+  }, [user, accessToken, currentView]); // AGREGADO currentView
+
+  // Escuchar evento de refresco del dashboard
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log("🔄 Refresco manual solicitado");
+      if (user?.role === "organizer" && accessToken) {
+        fetchMyEvents();
+      }
+    };
+
+    window.addEventListener('refreshDashboard', handleRefresh);
+    return () => window.removeEventListener('refreshDashboard', handleRefresh);
   }, [user, accessToken]);
 
   async function fetchEvents() {
@@ -76,66 +90,43 @@ function AppContent() {
 
     try {
       console.log("📊 Fetching my events for user:", user.id);
-      
-      // Obtener eventos del organizador actual
-      const myEventsData = await eventsService.getByCreator(user.id, accessToken);
-      console.log("✅ Eventos obtenidos:", myEventsData.length, myEventsData);
-      
-      // Obtener órdenes de los eventos del organizador
-      let orders = [];
-      try {
-        orders = await ordersService.getByOrganizer(user.id, accessToken);
-        console.log("✅ Órdenes obtenidas:", orders.length);
-      } catch (orderError) {
-        console.warn("⚠️ Error obteniendo órdenes (continuando sin órdenes):", orderError);
-        // Continuar sin órdenes si hay error
-      }
-      
-      // Crear un mapa de event_id -> órdenes para calcular estadísticas
-      const ordersByEvent = new Map<number, typeof orders>();
-      orders.forEach(order => {
-        if (!ordersByEvent.has(order.event_id)) {
-          ordersByEvent.set(order.event_id, []);
-        }
-        ordersByEvent.get(order.event_id)!.push(order);
-      });
 
-      // Transformar a formato del dashboard con estadísticas reales
+      // Obtener eventos del organizador actual CON ESTADÍSTICAS
+      const myEventsData = await eventsService.getByCreator(user.id, accessToken);
+      console.log("✅ Eventos obtenidos con estadísticas del backend:", myEventsData);
+
+      // Transformar a formato del dashboard usando DIRECTAMENTE las estadísticas del backend
       const dashboardEvents = myEventsData.map(event => {
-        const eventOrders = ordersByEvent.get(parseInt(event.id)) || [];
-        const ticketsSold = eventOrders.reduce((sum, order) => sum + order.quantity, 0);
-        const revenue = eventOrders
-          .filter(order => order.status === "paid" || order.status === "confirmed")
-          .reduce((sum, order) => sum + parseFloat(order.total_price.toString()), 0);
-        
-        // Calcular tasa de conversión (tickets vendidos / capacidad total)
-        const conversionRate = event.totalTickets > 0 
-          ? (ticketsSold / event.totalTickets) * 100 
+        // Usar directamente los valores calculados por el backend
+        const ticketsSold = event.ticketsSold || 0;
+        const revenue = event.revenue || 0;
+
+        // Calcular tasa de conversión
+        const conversionRate = event.totalTickets > 0
+          ? (ticketsSold / event.totalTickets) * 100
           : 0;
+
+        console.log(`📊 Evento "${event.title}": vendidos=${ticketsSold}, ingresos=$${revenue}`);
 
         return {
           id: event.id,
           title: event.title,
           date: event.date,
           status: event.status || "active",
-          ticketsSold,
+          ticketsSold: ticketsSold,
           totalTickets: event.totalTickets,
-          revenue,
-          conversionRate: Math.round(conversionRate * 10) / 10, // Redondear a 1 decimal
+          revenue: revenue,  // Usar el revenue calculado por el backend
+          conversionRate: Math.round(conversionRate * 10) / 10,
         };
       });
 
       console.log("📊 Dashboard events preparados:", dashboardEvents);
+      console.log("💰 Ingresos totales:", dashboardEvents.reduce((sum, e) => sum + e.revenue, 0));
+
       setMyEvents(dashboardEvents);
     } catch (error: any) {
       console.error("❌ Error fetching my events:", error);
-      console.error("❌ Error details:", {
-        message: error.message,
-        stack: error.stack,
-        response: error.response
-      });
       toast.error(`Error al cargar tus eventos: ${error.message || "Error desconocido"}`);
-      // Establecer array vacío en caso de error para evitar mostrar datos antiguos
       setMyEvents([]);
     }
   }
@@ -167,19 +158,20 @@ function AppContent() {
     }
 
     try {
-      console.log("Creating order with buyer_id:", user.id);
+      console.log("💳 Creating order with buyer_id:", user.id);
 
-      // Crear la orden con el buyer_id del usuario autenticado
-      const order = await ordersService.create(
-        {
-          event_id: parseInt(selectedEvent.id),
-          quantity: data.quantity,
-          buyer_id: user.id, // AGREGADO - enviar el ID del usuario
-        },
-        accessToken
-      );
+      // Crear la orden con el buyer_id Y buyer_name del usuario autenticado
+    const order = await ordersService.create(
+      {
+        event_id: parseInt(selectedEvent.id),
+        quantity: data.quantity,
+        buyer_id: user.id,
+        buyer_name: user.name,  // AGREGAR EL NOMBRE
+      },
+      accessToken
+    );
 
-      console.log("Order created:", order);
+    console.log("✅ Order created:", order);
 
       // Crear tickets para la orden
       const tickets = [];
@@ -194,7 +186,7 @@ function AppContent() {
         tickets.push(ticket);
       }
 
-      console.log("Tickets created:", tickets);
+      console.log("✅ Tickets created:", tickets);
 
       // Generar código de confirmación
       const confirmationCode = tickets[0]?.ticket_code || `PT-${order.id_order}`;
@@ -211,10 +203,22 @@ function AppContent() {
       setCurrentView("confirmation");
       toast.success(t("message.purchaseSuccess"));
 
-      // Refrescar eventos
+      // IMPORTANTE: Esperar un momento y refrescar eventos para actualizar estadísticas
+      console.log("🔄 Esperando para refrescar eventos...");
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+
+      console.log("🔄 Refrescando eventos después de compra...");
       await fetchEvents();
+
+      // Si hay un organizador con eventos cargados, refrescarlos también
+      if (myEvents.length > 0) {
+        console.log("🔄 Refrescando eventos del dashboard...");
+        await fetchMyEvents();
+      }
+
+      console.log("✅ Eventos refrescados con nuevas estadísticas");
     } catch (error: any) {
-      console.error("Purchase error:", error);
+      console.error("❌ Purchase error:", error);
       toast.error(error.message || "Error al procesar la compra");
     }
   };
@@ -240,10 +244,10 @@ function AppContent() {
 
       // Esperar un momento para que el backend procese
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       await fetchEvents();
       await fetchMyEvents();
-      
+
       console.log("✅ Eventos refrescados");
       setCurrentView("dashboard");
       setEditingEventId(null);

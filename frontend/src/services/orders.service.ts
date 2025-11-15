@@ -3,7 +3,9 @@ import { apiRequest } from '../config/api';
 export interface OrderAPI {
   id_order: number;
   buyer_id: string;
+  buyer_name?: string;  // NUEVO
   event_id: number;
+  event_title?: string;
   quantity: number;
   total_price: number;
   status: string;
@@ -14,13 +16,13 @@ export interface CreateOrderData {
   event_id: number;
   quantity: number;
   buyer_id: string;
+  buyer_name: string;  // NUEVO
 }
 
 export const ordersService = {
   // Crear una orden
   create: async (orderData: CreateOrderData, accessToken: string): Promise<OrderAPI> => {
     console.log("Creating order with data:", orderData);
-    console.log("Stringified data:", JSON.stringify(orderData));
     
     const response = await apiRequest<OrderAPI>('/orders/', {
       method: 'POST',
@@ -58,9 +60,9 @@ export const ordersService = {
     return response;
   },
 
-  // Obtener órdenes de eventos de un organizador
+  // Obtener órdenes de eventos de un organizador CON DETALLES
   getByOrganizer: async (creatorUserId: string, accessToken: string): Promise<OrderAPI[]> => {
-    console.log("Fetching orders for organizer:", creatorUserId);
+    console.log("📊 Fetching orders for organizer:", creatorUserId);
     
     const response = await apiRequest<OrderAPI[]>(`/orders/organizer/${creatorUserId}`, {
       headers: {
@@ -68,7 +70,7 @@ export const ordersService = {
       },
     });
     
-    console.log("Organizer orders fetched:", response);
+    console.log("✅ Organizer orders fetched with details:", response);
     return response;
   },
 };
