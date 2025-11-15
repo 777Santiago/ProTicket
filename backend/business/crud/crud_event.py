@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import cast, String
-from models.models import Event 
+from models.models import Event, Order
 from schemas.event import EventCreate, EventUpdate
 from uuid import UUID
 
@@ -44,18 +44,84 @@ def create_event(db: Session, event: EventCreate):
 
 
 def get_all_events(db: Session):
+    """Obtener todos los eventos CON estadísticas de ventas"""
     events = db.query(Event).all()
-    # Imprimir para debug
+    
+    # Enriquecer cada evento con estadísticas de órdenes
+    enriched_events = []
     for event in events:
-        print(f"Evento {event.id_event}: creator_user_id={event.creator_user_id}")
-    return events
+        # Calcular tickets vendidos desde las órdenes
+        orders = db.query(Order).filter(Order.event_id == event.id_event).all()
+        tickets_sold = sum([order.quantity for order in orders])
+        
+        # Calcular ingresos desde órdenes pagadas/confirmadas
+        revenue = sum([
+            float(order.total_price) 
+            for order in orders 
+            if order.status in ["paid", "confirmed"]
+        ])
+        
+        # Crear un objeto enriquecido (no modificamos el objeto de SQLAlchemy directamente)
+        event_dict = {
+            "id_event": event.id_event,
+            "organizer_id": event.organizer_id,
+            "creator_user_id": event.creator_user_id,
+            "title": event.title,
+            "description": event.description,
+            "location": event.location,
+            "start_datetime": event.start_datetime,
+            "price": event.price,
+            "capacity": event.capacity,
+            "status": event.status,
+            "created_at": event.created_at,
+            "tickets_sold": tickets_sold,  # NUEVO
+            "available_tickets": max(0, (event.capacity or 0) - tickets_sold),  # NUEVO
+            "revenue": revenue,  # NUEVO
+        }
+        enriched_events.append(event_dict)
+    
+    print(f"✅ Eventos obtenidos con estadísticas: {len(enriched_events)}")
+    for ev in enriched_events:
+        print(f"   - Evento {ev['id_event']}: vendidos={ev['tickets_sold']}, disponibles={ev['available_tickets']}, ingresos=${ev['revenue']}")
+    
+    return enriched_events
 
 
 def get_event_by_id(db: Session, id_event: int):
+    """Obtener un evento por ID CON estadísticas"""
     event = db.query(Event).filter(Event.id_event == id_event).first()
-    if event:
-        print(f"Evento encontrado: id={event.id_event}, creator_user_id={event.creator_user_id}")
-    return event
+    if not event:
+        return None
+    
+    # Calcular estadísticas
+    orders = db.query(Order).filter(Order.event_id == event.id_event).all()
+    tickets_sold = sum([order.quantity for order in orders])
+    revenue = sum([
+        float(order.total_price) 
+        for order in orders 
+        if order.status in ["paid", "confirmed"]
+    ])
+    
+    # Crear objeto enriquecido
+    event_dict = {
+        "id_event": event.id_event,
+        "organizer_id": event.organizer_id,
+        "creator_user_id": event.creator_user_id,
+        "title": event.title,
+        "description": event.description,
+        "location": event.location,
+        "start_datetime": event.start_datetime,
+        "price": event.price,
+        "capacity": event.capacity,
+        "status": event.status,
+        "created_at": event.created_at,
+        "tickets_sold": tickets_sold,
+        "available_tickets": max(0, (event.capacity or 0) - tickets_sold),
+        "revenue": revenue,
+    }
+    
+    print(f"Evento encontrado con estadísticas: id={event.id_event}, vendidos={tickets_sold}, disponibles={event_dict['available_tickets']}")
+    return event_dict
 
 
 def update_event(db: Session, id_event: int, event: EventUpdate):
@@ -79,7 +145,8 @@ def update_event(db: Session, id_event: int, event: EventUpdate):
     
     print(f"✅ Evento actualizado: id={db_event.id_event}, creator_user_id={db_event.creator_user_id}")
     
-    return db_event
+    # Retornar con estadísticas
+    return get_event_by_id(db, id_event)
 
 
 def delete_event(db: Session, id_event: int):
@@ -92,7 +159,7 @@ def delete_event(db: Session, id_event: int):
 
 
 def get_events_by_creator(db: Session, creator_user_id: UUID):
-    """Obtener todos los eventos creados por un usuario específico"""
+    """Obtener todos los eventos creados por un usuario específico CON estadísticas"""
     try:
         print(f"🔍 Buscando eventos con creator_user_id: {creator_user_id} (tipo: {type(creator_user_id)})")
         
@@ -101,19 +168,47 @@ def get_events_by_creator(db: Session, creator_user_id: UUID):
         print(f"🔍 Comparando con string: {creator_id_str}")
         
         # Usar directamente cast a string ya que la columna en BD es VARCHAR
-        # Esto evita el error de transacción abortada
         events = db.query(Event).filter(
             cast(Event.creator_user_id, String) == creator_id_str
         ).all()
         
-        print(f"✅ Eventos encontrados para creator_user_id {creator_user_id}: {len(events)}")
+        # Enriquecer cada evento con estadísticas
+        enriched_events = []
         for event in events:
-            print(f"   - Evento {event.id_event}: creator={event.creator_user_id} (tipo: {type(event.creator_user_id)})")
-        return events
+            orders = db.query(Order).filter(Order.event_id == event.id_event).all()
+            tickets_sold = sum([order.quantity for order in orders])
+            revenue = sum([
+                float(order.total_price) 
+                for order in orders 
+                if order.status in ["paid", "confirmed"]
+            ])
+            
+            event_dict = {
+                "id_event": event.id_event,
+                "organizer_id": event.organizer_id,
+                "creator_user_id": event.creator_user_id,
+                "title": event.title,
+                "description": event.description,
+                "location": event.location,
+                "start_datetime": event.start_datetime,
+                "price": event.price,
+                "capacity": event.capacity,
+                "status": event.status,
+                "created_at": event.created_at,
+                "tickets_sold": tickets_sold,
+                "available_tickets": max(0, (event.capacity or 0) - tickets_sold),
+                "revenue": revenue,
+            }
+            enriched_events.append(event_dict)
+        
+        print(f"✅ Eventos encontrados para creator_user_id {creator_user_id}: {len(enriched_events)}")
+        for ev in enriched_events:
+            print(f"   - Evento {ev['id_event']}: vendidos={ev['tickets_sold']}, disponibles={ev['available_tickets']}, ingresos=${ev['revenue']}")
+        
+        return enriched_events
     except Exception as e:
         print(f"❌ Error en get_events_by_creator: {e}")
         import traceback
         traceback.print_exc()
-        # Hacer rollback en caso de error
         db.rollback()
         raise

@@ -93,77 +93,49 @@ def create_event(
     
     return created_event
 
-@router.get("/", response_model=list[EventOut])
+@router.get("/")
 def get_events(db: Session = Depends(get_db)):
-    """Obtener todos los eventos"""
+    """Obtener todos los eventos CON estadísticas"""
     events = crud_event.get_all_events(db)
     print(f"\n=== OBTENER EVENTOS === Total: {len(events)}")
-    for event in events:
-        print(f"  - Evento {event.id_event}: creator={event.creator_user_id}")
+    # Los eventos ya vienen como diccionarios con estadísticas
     return events
 
-@router.get("/creator/{creator_user_id}", response_model=list[EventOut])
+@router.get("/creator/{creator_user_id}")
 def get_events_by_creator(
     creator_user_id: UUID,
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(None)
 ):
-    """Obtener todos los eventos creados por un usuario específico"""
+    """Obtener todos los eventos creados por un usuario específico CON estadísticas"""
     try:
         print(f"\n=== OBTENER EVENTOS POR CREADOR {creator_user_id} ===")
-        print(f"Tipo de creator_user_id: {type(creator_user_id)}")
         
-        # Verificar autenticación
         user_id = get_user_id_from_token(authorization)
         if not user_id:
-            print("❌ No se pudo extraer user_id del token")
-            raise HTTPException(
-                status_code=401,
-                detail="Debes iniciar sesión para ver tus eventos"
-            )
+            raise HTTPException(status_code=401, detail="Debes iniciar sesión")
         
-        print(f"✅ User ID del token: {user_id} (tipo: {type(user_id)})")
-        print(f"✅ Creator User ID del path: {creator_user_id} (tipo: {type(creator_user_id)})")
+        if str(user_id) != str(creator_user_id):
+            raise HTTPException(status_code=403, detail="No autorizado")
         
-        # Verificar que el usuario solo pueda ver sus propios eventos
-        # Convertir ambos a string para comparar
-        user_id_str = str(user_id)
-        creator_id_str = str(creator_user_id)
-        
-        print(f"🔍 Comparando: '{user_id_str}' == '{creator_id_str}'")
-        
-        if user_id_str != creator_id_str:
-            print("❌ Los IDs no coinciden")
-            raise HTTPException(
-                status_code=403,
-                detail="No tienes permiso para ver los eventos de otro usuario"
-            )
-        
-        print("✅ Usuario autorizado, obteniendo eventos...")
         events = crud_event.get_events_by_creator(db, creator_user_id)
         print(f"✅ Eventos encontrados: {len(events)}")
         return events
         
     except HTTPException:
-        # Re-lanzar HTTPException para que FastAPI la maneje correctamente con CORS
         raise
     except Exception as e:
-        print(f"❌ Error inesperado en get_events_by_creator: {e}")
-        print(f"❌ Tipo de error: {type(e)}")
+        print(f"❌ Error: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error interno del servidor: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{event_id}", response_model=EventOut)
+@router.get("/{event_id}")
 def get_event(event_id: int, db: Session = Depends(get_db)):
-    """Obtener un evento por ID"""
+    """Obtener un evento por ID CON estadísticas"""
     event = crud_event.get_event_by_id(db, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Evento no encontrado")
-    print(f"\n=== GET EVENTO {event_id} === creator_user_id: {event.creator_user_id}")
     return event
 
 @router.put("/{event_id}", response_model=EventOut)

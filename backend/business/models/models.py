@@ -43,6 +43,7 @@ class Order(Base):
 
     id_order = Column(Integer, primary_key=True, index=True)
     buyer_id = Column(UUID(as_uuid=True), nullable=False)
+    buyer_name = Column(String(255), nullable=True)  # NUEVO CAMPO
     event_id = Column(Integer, ForeignKey("events.id_event", ondelete="CASCADE"), nullable=False)
     quantity = Column(Integer, nullable=False)
     total_price = Column(Numeric(12, 2), nullable=False)

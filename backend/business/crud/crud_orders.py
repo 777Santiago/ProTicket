@@ -20,6 +20,7 @@ def create_order(db: Session, order_data: OrderCreate, buyer_id: UUID):
         total_price = event.price * order_data.quantity
         new_order = Order(
             buyer_id=buyer_id,
+            buyer_name=order_data.buyer_name,  # NUEVO - Guardar el nombre
             event_id=order_data.event_id,
             quantity=order_data.quantity,
             total_price=total_price,

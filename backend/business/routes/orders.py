@@ -36,47 +36,53 @@ def update_order_status(order_id: int, update_data: OrderUpdate, db: Session = D
         raise HTTPException(status_code=400, detail=error)
     return order
 
-@router.get("/organizer/{creator_user_id}", response_model=list[OrderOut])
+@router.get("/organizer/{creator_user_id}")
 def get_orders_by_organizer(
     creator_user_id: UUID,
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(None)
 ):
-    """Obtener todas las órdenes de eventos creados por un organizador"""
+    """Obtener todas las órdenes de eventos creados por un organizador CON NOMBRES"""
     try:
         from routes.events import get_user_id_from_token
+        from models.models import Event
         
         print(f"\n=== OBTENER ÓRDENES POR ORGANIZADOR {creator_user_id} ===")
         
         # Verificar autenticación
         user_id = get_user_id_from_token(authorization)
         if not user_id:
-            print("❌ No se pudo extraer user_id del token")
-            raise HTTPException(
-                status_code=401,
-                detail="Debes iniciar sesión para ver tus órdenes"
-            )
+            raise HTTPException(status_code=401, detail="No autorizado")
         
-        # Verificar que el usuario solo pueda ver sus propias órdenes
         if str(user_id) != str(creator_user_id):
-            print(f"❌ IDs no coinciden: {user_id} != {creator_user_id}")
-            raise HTTPException(
-                status_code=403,
-                detail="No tienes permiso para ver las órdenes de otro usuario"
-            )
+            raise HTTPException(status_code=403, detail="No autorizado")
         
-        print(f"✅ Usuario autorizado, obteniendo órdenes...")
         orders = crud_orders.get_orders_by_organizer(db, creator_user_id)
-        print(f"✅ Órdenes encontradas: {len(orders)}")
-        return orders
+        
+        # Enriquecer órdenes con información del evento y nombre del comprador
+        enriched_orders = []
+        for order in orders:
+            event = db.query(Event).filter(Event.id_event == order.event_id).first()
+            order_dict = {
+                "id_order": order.id_order,
+                "buyer_id": str(order.buyer_id),
+                "buyer_name": order.buyer_name or "Usuario",  # USAR EL NOMBRE GUARDADO
+                "event_id": order.event_id,
+                "event_title": event.title if event else "Evento Desconocido",
+                "quantity": order.quantity,
+                "total_price": float(order.total_price),
+                "status": order.status,
+                "created_at": order.created_at.isoformat() if order.created_at else None,
+            }
+            enriched_orders.append(order_dict)
+        
+        print(f"✅ Órdenes enriquecidas encontradas: {len(enriched_orders)}")
+        return enriched_orders
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error inesperado en get_orders_by_organizer: {e}")
+        print(f"❌ Error: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error interno del servidor: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=str(e))
