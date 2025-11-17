@@ -23,42 +23,48 @@ public class AuthController {
   private final PasswordResetService resetService;
 
   @Operation(summary="Registro de usuario")
-  @PostMapping("/register")
-  public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
-    try {
-      User u = userService.register(req.getEmail(), req.getPassword(), req.getRole());
-      String token = jwtService.generate(Map.of("user_id", u.getId(), "role", u.getRole().getRoleName()));
-      return ResponseEntity.ok(new JwtResponse(token, u.getId(), u.getRole().getRoleName()));
-    } catch (IllegalArgumentException e) {
-      // Devolver mensaje de error específico
-      return ResponseEntity
-          .status(HttpStatus.BAD_REQUEST)
-          .body(Map.of("error", e.getMessage()));
-    } catch (Exception e) {
-      return ResponseEntity
-          .status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(Map.of("error", "Error al crear cuenta"));
-    }
+@PostMapping("/register")
+public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
+  try {
+    User u = userService.register(req.getEmail(), req.getPassword(), req.getRole());
+    String token = jwtService.generate(Map.of("user_id", u.getId(), "role", u.getRole().getRoleName()));
+    return ResponseEntity.ok(new JwtResponse(token, u.getId(), u.getRole().getRoleName()));
+  } catch (IllegalArgumentException e) {
+    // Mensajes de error específicos y amigables
+    System.out.println("❌ Error de registro: " + e.getMessage());
+    return ResponseEntity
+        .status(HttpStatus.BAD_REQUEST)
+        .body(Map.of("error", e.getMessage()));
+  } catch (Exception e) {
+    System.out.println("❌ Error inesperado en registro: " + e.getMessage());
+    e.printStackTrace();
+    return ResponseEntity
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(Map.of("error", "Error al crear la cuenta. Por favor, inténtalo de nuevo."));
   }
+}
 
-  @Operation(summary="Login con email/password")
-  @PostMapping("/login")
-  public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
-    try {
-      User u = userService.authenticate(req.getEmail(), req.getPassword());
-      String token = jwtService.generate(Map.of("user_id", u.getId(), "role", u.getRole().getRoleName()));
-      return ResponseEntity.ok(new JwtResponse(token, u.getId(), u.getRole().getRoleName()));
-    } catch (IllegalArgumentException e) {
-      // Devolver mensaje de error específico
-      return ResponseEntity
-          .status(HttpStatus.UNAUTHORIZED)
-          .body(Map.of("error", e.getMessage()));
-    } catch (Exception e) {
-      return ResponseEntity
-          .status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(Map.of("error", "Error al iniciar sesión"));
-    }
+@Operation(summary="Login con email/password")
+@PostMapping("/login")
+public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
+  try {
+    User u = userService.authenticate(req.getEmail(), req.getPassword());
+    String token = jwtService.generate(Map.of("user_id", u.getId(), "role", u.getRole().getRoleName()));
+    return ResponseEntity.ok(new JwtResponse(token, u.getId(), u.getRole().getRoleName()));
+  } catch (IllegalArgumentException e) {
+    // Mensajes de error específicos y amigables
+    System.out.println("❌ Error de login: " + e.getMessage());
+    return ResponseEntity
+        .status(HttpStatus.UNAUTHORIZED)
+        .body(Map.of("error", e.getMessage()));
+  } catch (Exception e) {
+    System.out.println("❌ Error inesperado en login: " + e.getMessage());
+    e.printStackTrace();
+    return ResponseEntity
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(Map.of("error", "Error al iniciar sesión. Por favor, inténtalo de nuevo."));
   }
+}
 
   @Operation(summary="Iniciar reset de contraseña (envía token por email en producción)")
   @PostMapping("/password/start")
