@@ -14,7 +14,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 const translations = {
   es: {
-    // Header
+    // ==================== HEADER ====================
     "header.home": "Inicio",
     "header.dashboard": "Dashboard",
     "header.myTickets": "Mis Entradas",
@@ -22,14 +22,14 @@ const translations = {
     "header.signup": "Registrarse",
     "header.logout": "Cerrar Sesión",
     
-    // Home
+    // ==================== HOME ====================
     "home.title": "Próximos Eventos",
     "home.subtitle": "Descubre los mejores eventos cerca de ti",
     "home.search": "Buscar eventos...",
     "home.allCategories": "Todas las categorías",
     "home.noEvents": "No hay eventos disponibles",
     
-    // Event Details
+    // ==================== EVENT DETAILS ====================
     "event.date": "Fecha",
     "event.time": "Hora",
     "event.location": "Ubicación",
@@ -40,7 +40,7 @@ const translations = {
     "event.back": "Volver",
     "event.soldOut": "Agotado",
     
-    // Purchase Flow
+    // ==================== PURCHASE FLOW ====================
     "purchase.title": "Comprar Entradas",
     "purchase.quantity": "Cantidad",
     "purchase.name": "Nombre completo",
@@ -50,7 +50,7 @@ const translations = {
     "purchase.cancel": "Cancelar",
     "purchase.processing": "Procesando compra...",
     
-    // Confirmation
+    // ==================== CONFIRMATION ====================
     "confirmation.title": "¡Compra Confirmada!",
     "confirmation.subtitle": "Tu compra ha sido procesada exitosamente",
     "confirmation.code": "Código de confirmación",
@@ -58,7 +58,7 @@ const translations = {
     "confirmation.download": "Descargar PDF",
     "confirmation.backToEvents": "Volver a Eventos",
     
-    // Organizer Dashboard
+    // ==================== ORGANIZER DASHBOARD ====================
     "dashboard.title": "Panel de Organizador",
     "dashboard.subtitle": "Gestiona tus eventos y monitorea las ventas",
     "dashboard.createEvent": "Crear Evento",
@@ -87,7 +87,7 @@ const translations = {
     "dashboard.noTicketsSold": "Sin ventas aún",
     "dashboard.noEvents": "Sin eventos",
     
-    // Create/Edit Event
+    // ==================== CREATE/EDIT EVENT ====================
     "createEvent.title": "Crear Nuevo Evento",
     "createEvent.editTitle": "Editar Evento",
     "createEvent.subtitle": "Completa la información de tu evento para empezar a vender entradas",
@@ -113,7 +113,7 @@ const translations = {
     "createEvent.update": "Actualizar Evento",
     "createEvent.required": "*",
     
-    // Categories
+    // ==================== CATEGORIES ====================
     "category.music": "Música",
     "category.sports": "Deportes",
     "category.theater": "Teatro",
@@ -121,7 +121,7 @@ const translations = {
     "category.festivals": "Festivales",
     "category.other": "Otro",
     
-    // Auth
+    // ==================== AUTH ====================
     "auth.login": "Iniciar Sesión",
     "auth.loginSubtitle": "Ingresa tus credenciales para acceder a tu cuenta",
     "auth.signup": "Crear Cuenta",
@@ -148,10 +148,10 @@ const translations = {
     "auth.creatingAccount": "Creando cuenta...",
     "auth.sending": "Enviando...",
     
-    // Messages
+    // ==================== MESSAGES ====================
     "message.loginRequired": "Debes iniciar sesión para comprar tickets",
     "message.buyersOnly": "Solo los compradores pueden comprar tickets",
-    "message.organizersOnly": "Solo los organizadores pueden acceder al dashboard",
+    "message.organizersOnly": "Solo los organizadores y administradores pueden acceder al dashboard",
     "message.buyersCanViewTickets": "Solo los compradores pueden ver sus tickets",
     "message.purchaseSuccess": "¡Compra realizada con éxito!",
     "message.eventCreated": "Evento creado exitosamente",
@@ -163,7 +163,7 @@ const translations = {
     "message.accountLocked": "Cuenta bloqueada temporalmente por múltiples intentos fallidos. Inténtalo de nuevo en 10 minutos.",
     "message.confirmDelete": "¿Estás seguro de que deseas eliminar este evento?",
     
-    // My Tickets
+    // ==================== MY TICKETS ====================
     "myTickets.title": "Mis Entradas",
     "myTickets.subtitle": "Gestiona todas tus entradas compradas",
     "myTickets.noTickets": "No tienes entradas compradas",
@@ -181,7 +181,7 @@ const translations = {
     "myTickets.errorLoading": "Error al cargar tus tickets",
     "myTickets.event": "Evento",
     
-    // Event List
+    // ==================== EVENT LIST ====================
     "eventList.discover": "Descubre Eventos",
     "eventList.findAndBuy": "Encuentra y compra entradas para los mejores eventos",
     "eventList.searchPlaceholder": "Buscar eventos o ubicaciones...",
@@ -189,12 +189,12 @@ const translations = {
     "eventList.allCategories": "Todas las categorías",
     "eventList.noEventsFound": "No se encontraron eventos",
     
-    // Event Card
+    // ==================== EVENT CARD ====================
     "eventCard.availableTickets": "entradas disponibles",
     "eventCard.from": "Desde",
     "eventCard.viewDetails": "Ver Detalles",
     
-    // Event Details Extended
+    // ==================== EVENT DETAILS EXTENDED ====================
     "eventDetails.backToEvents": "Volver a eventos",
     "eventDetails.organizedBy": "Organizado por",
     "eventDetails.availability": "Disponibilidad",
@@ -207,7 +207,7 @@ const translations = {
     "eventDetails.secureQR": "Código QR seguro",
     "eventDetails.support247": "Soporte 24/7",
     
-    // Purchase Flow Extended
+    // ==================== PURCHASE FLOW EXTENDED ====================
     "purchaseFlow.back": "Volver",
     "purchaseFlow.purchaseInfo": "Información de Compra",
     "purchaseFlow.buyerData": "Datos del Comprador",
@@ -234,7 +234,7 @@ const translations = {
     "purchaseFlow.serviceFee": "Cargo por servicio",
     "purchaseFlow.instantDeliveryInfo": "Entrega instantánea por email con código QR",
     
-    // Ticket Confirmation Extended
+    // ==================== TICKET CONFIRMATION EXTENDED ====================
     "ticketConfirmation.title": "¡Compra Confirmada!",
     "ticketConfirmation.emailSent": "Hemos enviado tus entradas a",
     "ticketConfirmation.purchaseDetails": "Detalles de tu Compra",
@@ -248,9 +248,19 @@ const translations = {
     "ticketConfirmation.print": "Imprimir",
     "ticketConfirmation.resendEmail": "Reenviar Email",
     "ticketConfirmation.alertPDF": "En una aplicación real, aquí se descargaría el PDF con tus entradas",
+
+    // ==================== ERRORS ====================
+    "error.userNotFound": "Usuario no encontrado",
+    "error.wrongPassword": "Contraseña incorrecta",
+    "error.emailExists": "Este correo electrónico ya está registrado",
+    "error.invalidCredentials": "Credenciales inválidas",
+    "error.accountLocked": "Cuenta bloqueada temporalmente",
+    "error.weakPassword": "La contraseña es muy débil",
+    "error.invalidRole": "Tipo de cuenta no válido",
+    "error.serverError": "Error del servidor. Inténtalo de nuevo",
   },
   en: {
-    // Header
+    // ==================== HEADER ====================
     "header.home": "Home",
     "header.dashboard": "Dashboard",
     "header.myTickets": "My Tickets",
@@ -258,14 +268,14 @@ const translations = {
     "header.signup": "Sign Up",
     "header.logout": "Logout",
     
-    // Home
+    // ==================== HOME ====================
     "home.title": "Upcoming Events",
     "home.subtitle": "Discover the best events near you",
     "home.search": "Search events...",
     "home.allCategories": "All categories",
     "home.noEvents": "No events available",
     
-    // Event Details
+    // ==================== EVENT DETAILS ====================
     "event.date": "Date",
     "event.time": "Time",
     "event.location": "Location",
@@ -276,7 +286,7 @@ const translations = {
     "event.back": "Back",
     "event.soldOut": "Sold Out",
     
-    // Purchase Flow
+    // ==================== PURCHASE FLOW ====================
     "purchase.title": "Buy Tickets",
     "purchase.quantity": "Quantity",
     "purchase.name": "Full name",
@@ -286,7 +296,7 @@ const translations = {
     "purchase.cancel": "Cancel",
     "purchase.processing": "Processing purchase...",
     
-    // Confirmation
+    // ==================== CONFIRMATION ====================
     "confirmation.title": "Purchase Confirmed!",
     "confirmation.subtitle": "Your purchase has been processed successfully",
     "confirmation.code": "Confirmation code",
@@ -294,7 +304,7 @@ const translations = {
     "confirmation.download": "Download PDF",
     "confirmation.backToEvents": "Back to Events",
     
-    // Organizer Dashboard
+    // ==================== ORGANIZER DASHBOARD ====================
     "dashboard.title": "Organizer Dashboard",
     "dashboard.subtitle": "Manage your events and monitor sales",
     "dashboard.createEvent": "Create Event",
@@ -323,7 +333,7 @@ const translations = {
     "dashboard.noTicketsSold": "No sales yet",
     "dashboard.noEvents": "No events",
     
-    // Create/Edit Event
+    // ==================== CREATE/EDIT EVENT ====================
     "createEvent.title": "Create New Event",
     "createEvent.editTitle": "Edit Event",
     "createEvent.subtitle": "Fill in your event information to start selling tickets",
@@ -349,7 +359,7 @@ const translations = {
     "createEvent.update": "Update Event",
     "createEvent.required": "*",
     
-    // Categories
+    // ==================== CATEGORIES ====================
     "category.music": "Music",
     "category.sports": "Sports",
     "category.theater": "Theater",
@@ -357,7 +367,7 @@ const translations = {
     "category.festivals": "Festivals",
     "category.other": "Other",
     
-    // Auth
+    // ==================== AUTH ====================
     "auth.login": "Login",
     "auth.loginSubtitle": "Enter your credentials to access your account",
     "auth.signup": "Sign Up",
@@ -384,10 +394,10 @@ const translations = {
     "auth.creatingAccount": "Creating account...",
     "auth.sending": "Sending...",
     
-    // Messages
+    // ==================== MESSAGES ====================
     "message.loginRequired": "You must login to buy tickets",
     "message.buyersOnly": "Only buyers can purchase tickets",
-    "message.organizersOnly": "Only organizers can access the dashboard",
+    "message.organizersOnly": "Only organizers and administrators can access the dashboard",
     "message.buyersCanViewTickets": "Only buyers can view their tickets",
     "message.purchaseSuccess": "Purchase completed successfully!",
     "message.eventCreated": "Event created successfully",
@@ -399,7 +409,7 @@ const translations = {
     "message.accountLocked": "Account temporarily locked due to multiple failed attempts. Please try again in 10 minutes.",
     "message.confirmDelete": "Are you sure you want to delete this event?",
     
-    // My Tickets
+    // ==================== MY TICKETS ====================
     "myTickets.title": "My Tickets",
     "myTickets.subtitle": "Manage all your purchased tickets",
     "myTickets.noTickets": "You don't have any purchased tickets",
@@ -417,7 +427,7 @@ const translations = {
     "myTickets.errorLoading": "Error loading your tickets",
     "myTickets.event": "Event",
     
-    // Event List
+    // ==================== EVENT LIST ====================
     "eventList.discover": "Discover Events",
     "eventList.findAndBuy": "Find and buy tickets for the best events",
     "eventList.searchPlaceholder": "Search events or locations...",
@@ -425,12 +435,12 @@ const translations = {
     "eventList.allCategories": "All categories",
     "eventList.noEventsFound": "No events found",
     
-    // Event Card
+    // ==================== EVENT CARD ====================
     "eventCard.availableTickets": "tickets available",
     "eventCard.from": "From",
     "eventCard.viewDetails": "View Details",
     
-    // Event Details Extended
+    // ==================== EVENT DETAILS EXTENDED ====================
     "eventDetails.backToEvents": "Back to events",
     "eventDetails.organizedBy": "Organized by",
     "eventDetails.availability": "Availability",
@@ -443,7 +453,7 @@ const translations = {
     "eventDetails.secureQR": "Secure QR code",
     "eventDetails.support247": "24/7 Support",
     
-    // Purchase Flow Extended
+    // ==================== PURCHASE FLOW EXTENDED ====================
     "purchaseFlow.back": "Back",
     "purchaseFlow.purchaseInfo": "Purchase Information",
     "purchaseFlow.buyerData": "Buyer Information",
@@ -470,7 +480,7 @@ const translations = {
     "purchaseFlow.serviceFee": "Service fee",
     "purchaseFlow.instantDeliveryInfo": "Instant delivery by email with QR code",
     
-    // Ticket Confirmation Extended
+    // ==================== TICKET CONFIRMATION EXTENDED ====================
     "ticketConfirmation.title": "Purchase Confirmed!",
     "ticketConfirmation.emailSent": "We have sent your tickets to",
     "ticketConfirmation.purchaseDetails": "Purchase Details",
@@ -484,6 +494,16 @@ const translations = {
     "ticketConfirmation.print": "Print",
     "ticketConfirmation.resendEmail": "Resend Email",
     "ticketConfirmation.alertPDF": "In a real application, the PDF with your tickets would be downloaded here",
+
+    // ==================== ERRORS ====================
+    "error.userNotFound": "User not found",
+    "error.wrongPassword": "Incorrect password",
+    "error.emailExists": "This email is already registered",
+    "error.invalidCredentials": "Invalid credentials",
+    "error.accountLocked": "Account temporarily locked",
+    "error.weakPassword": "Password is too weak",
+    "error.invalidRole": "Invalid account type",
+    "error.serverError": "Server error. Please try again",
   },
 };
 
@@ -505,7 +525,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const formatDate = (dateString: string, timeString?: string): string => {
     try {
       const date = new Date(dateString);
-      
+
       const options: Intl.DateTimeFormatOptions = {
         year: "numeric",
         month: "long",
@@ -529,7 +549,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const formatDateTime = (isoString: string): string => {
     try {
       const date = new Date(isoString);
-      
+
       const options: Intl.DateTimeFormatOptions = {
         year: "numeric",
         month: "long",

@@ -34,8 +34,8 @@ export function LoginModal({ open, onClose, onSwitchToSignup, onSwitchToForgotPa
       onClose();
     } catch (error: any) {
       console.error("Login error:", error);
-      
-      // Mostrar el mensaje de error específico
+
+      // Mostrar el mensaje de error específico del servidor
       const errorMessage = error?.message || "Error al iniciar sesión";
       toast.error(errorMessage);
     } finally {

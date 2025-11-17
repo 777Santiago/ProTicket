@@ -52,7 +52,7 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const pwdError = validatePassword(password);
     if (pwdError) {
       setPasswordError(pwdError);
@@ -73,8 +73,8 @@ export function SignupModal({ open, onClose, onSwitchToLogin }: SignupModalProps
       onClose();
     } catch (error: any) {
       console.error("Signup error:", error);
-      
-      // Mostrar el mensaje de error específico
+
+      // Mostrar el mensaje de error específico del servidor
       const errorMessage = error?.message || "Error al crear cuenta";
       toast.error(errorMessage);
     } finally {

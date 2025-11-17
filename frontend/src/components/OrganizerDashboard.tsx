@@ -12,7 +12,6 @@ import { useAuth } from "../contexts/AuthContext";
 import { ordersService } from "../services/orders.service";
 import { toast } from "sonner@2.0.3";
 
-
 interface OrganizerDashboardProps {
   events: Array<{
     id: string;
@@ -68,53 +67,53 @@ export function OrganizerDashboard({ events, onCreateEvent, onEditEvent, onDelet
   }, [user, accessToken]);
 
   async function fetchSales() {
-  if (!user || !accessToken) return;
-  
-  try {
-    setLoadingSales(true);
-    console.log("📊 Cargando ventas del organizador...");
-    
-    const orders = await ordersService.getByOrganizer(user.id, accessToken);
-    console.log("✅ Órdenes recibidas:", orders);
-    
-    if (orders.length === 0) {
+    if (!user || !accessToken) return;
+
+    try {
+      setLoadingSales(true);
+      console.log("📊 Cargando ventas del organizador...");
+
+      const orders = await ordersService.getByOrganizer(user.id, accessToken);
+      console.log("✅ Órdenes recibidas:", orders);
+
+      if (orders.length === 0) {
+        setSales([]);
+        return;
+      }
+
+      // Transformar órdenes a formato de ventas usando el buyer_name que viene de la orden
+      const salesData: Sale[] = orders.map(order => ({
+        id: order.id_order,
+        date: new Date(order.created_at).toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }),
+        eventTitle: order.event_title || "Evento",
+        buyerId: order.buyer_id,
+        buyerName: order.buyer_name || "Usuario",  // USAR DIRECTAMENTE EL NOMBRE DE LA ORDEN
+        quantity: order.quantity,
+        totalPrice: order.total_price,
+        status: order.status,
+      }));
+
+      // Ordenar por fecha más reciente primero
+      salesData.sort((a, b) => {
+        const dateA = new Date(a.date.split('/').reverse().join('-'));
+        const dateB = new Date(b.date.split('/').reverse().join('-'));
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      console.log("✅ Ventas transformadas con nombres:", salesData);
+      setSales(salesData);
+    } catch (error: any) {
+      console.error("❌ Error cargando ventas:", error);
+      toast.error("Error al cargar el historial de ventas");
       setSales([]);
-      return;
+    } finally {
+      setLoadingSales(false);
     }
-    
-    // Transformar órdenes a formato de ventas usando el buyer_name que viene de la orden
-    const salesData: Sale[] = orders.map(order => ({
-      id: order.id_order,
-      date: new Date(order.created_at).toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      }),
-      eventTitle: order.event_title || "Evento",
-      buyerId: order.buyer_id,
-      buyerName: order.buyer_name || "Usuario",  // USAR DIRECTAMENTE EL NOMBRE DE LA ORDEN
-      quantity: order.quantity,
-      totalPrice: order.total_price,
-      status: order.status,
-    }));
-    
-    // Ordenar por fecha más reciente primero
-    salesData.sort((a, b) => {
-      const dateA = new Date(a.date.split('/').reverse().join('-'));
-      const dateB = new Date(b.date.split('/').reverse().join('-'));
-      return dateB.getTime() - dateA.getTime();
-    });
-    
-    console.log("✅ Ventas transformadas con nombres:", salesData);
-    setSales(salesData);
-  } catch (error: any) {
-    console.error("❌ Error cargando ventas:", error);
-    toast.error("Error al cargar el historial de ventas");
-    setSales([]);
-  } finally {
-    setLoadingSales(false);
   }
-}
 
   const handleDeleteClick = (eventId: string) => {
     setEventToDelete(eventId);
@@ -145,8 +144,15 @@ export function OrganizerDashboard({ events, onCreateEvent, onEditEvent, onDelet
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="mb-2">{t("dashboard.title")}</h1>
-          <p className="text-gray-600">{t("dashboard.subtitle")}</p>
+          <h1 className="mb-2">
+            {user?.role === "admin" ? "Panel de Administrador" : t("dashboard.title")}
+          </h1>
+          <p className="text-gray-600">
+            {user?.role === "admin"
+              ? "Gestiona todos los eventos de la plataforma"
+              : t("dashboard.subtitle")
+            }
+          </p>
         </div>
         <Button onClick={onCreateEvent} size="lg">
           <Plus className="h-5 w-5 mr-2" />

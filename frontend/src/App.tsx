@@ -45,11 +45,11 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    if (user?.role === "organizer" && accessToken) {
-      console.log("📊 Usuario organizador detectado, cargando eventos...");
+    if ((user?.role === "organizer" || user?.role === "admin") && accessToken) {
+      console.log("📊 Usuario organizador/admin detectado, cargando eventos...");
       fetchMyEvents();
     }
-  }, [user, accessToken, currentView]); // AGREGADO currentView
+  }, [user, accessToken, currentView]);
 
   // Escuchar evento de refresco del dashboard
   useEffect(() => {
@@ -84,24 +84,32 @@ function AppContent() {
 
   async function fetchMyEvents() {
     if (!accessToken || !user) {
-      console.log("⚠️ fetchMyEvents: No accessToken o user", { hasToken: !!accessToken, hasUser: !!user });
+      console.log("⚠️ fetchMyEvents: No accessToken o user");
       return;
     }
 
     try {
-      console.log("📊 Fetching my events for user:", user.id);
+      console.log("📊 Fetching my events for user:", user.id, "role:", user.role);
 
-      // Obtener eventos del organizador actual CON ESTADÍSTICAS
-      const myEventsData = await eventsService.getByCreator(user.id, accessToken);
+      let myEventsData;
+
+      // Si es ADMIN, obtener TODOS los eventos
+      if (user.role === "admin") {
+        console.log("👑 Usuario ADMIN - Obteniendo TODOS los eventos");
+        myEventsData = await eventsService.getAll();
+      } else {
+        // Si es organizer, solo sus eventos
+        console.log("📊 Usuario Organizer - Obteniendo solo sus eventos");
+        myEventsData = await eventsService.getByCreator(user.id, accessToken);
+      }
+
       console.log("✅ Eventos obtenidos con estadísticas del backend:", myEventsData);
 
-      // Transformar a formato del dashboard usando DIRECTAMENTE las estadísticas del backend
+      // Transformar a formato del dashboard
       const dashboardEvents = myEventsData.map(event => {
-        // Usar directamente los valores calculados por el backend
         const ticketsSold = event.ticketsSold || 0;
         const revenue = event.revenue || 0;
 
-        // Calcular tasa de conversión
         const conversionRate = event.totalTickets > 0
           ? (ticketsSold / event.totalTickets) * 100
           : 0;
@@ -115,7 +123,7 @@ function AppContent() {
           status: event.status || "active",
           ticketsSold: ticketsSold,
           totalTickets: event.totalTickets,
-          revenue: revenue,  // Usar el revenue calculado por el backend
+          revenue: revenue,
           conversionRate: Math.round(conversionRate * 10) / 10,
         };
       });
@@ -161,17 +169,17 @@ function AppContent() {
       console.log("💳 Creating order with buyer_id:", user.id);
 
       // Crear la orden con el buyer_id Y buyer_name del usuario autenticado
-    const order = await ordersService.create(
-      {
-        event_id: parseInt(selectedEvent.id),
-        quantity: data.quantity,
-        buyer_id: user.id,
-        buyer_name: user.name,  // AGREGAR EL NOMBRE
-      },
-      accessToken
-    );
+      const order = await ordersService.create(
+        {
+          event_id: parseInt(selectedEvent.id),
+          quantity: data.quantity,
+          buyer_id: user.id,
+          buyer_name: user.name,  // AGREGAR EL NOMBRE
+        },
+        accessToken
+      );
 
-    console.log("✅ Order created:", order);
+      console.log("✅ Order created:", order);
 
       // Crear tickets para la orden
       const tickets = [];
@@ -229,8 +237,9 @@ function AppContent() {
       return;
     }
 
-    if (user.role !== "organizer") {
-      toast.error(t("message.organizersOnly"));
+    // Permitir crear eventos a organizers y admins
+    if (user.role !== "organizer" && user.role !== "admin") {
+      toast.error("Solo los organizadores y administradores pueden crear eventos");
       return;
     }
 
@@ -242,7 +251,6 @@ function AppContent() {
       console.log("✅ Event created:", newEvent);
       console.log("🔄 Refrescando eventos del dashboard...");
 
-      // Esperar un momento para que el backend procese
       await new Promise(resolve => setTimeout(resolve, 500));
 
       await fetchEvents();
@@ -256,7 +264,6 @@ function AppContent() {
       console.error("Create event error:", error);
       const errorMessage = error.message || "Error al crear evento";
 
-      // Extraer mensaje del servidor si existe
       if (errorMessage.includes("403")) {
         toast.error("No tienes permiso para crear eventos");
       } else if (errorMessage.includes("401")) {
@@ -273,8 +280,9 @@ function AppContent() {
       return;
     }
 
-    if (user.role !== "organizer") {
-      toast.error(t("message.organizersOnly"));
+    // Permitir editar a organizers y admins
+    if (user.role !== "organizer" && user.role !== "admin") {
+      toast.error("Solo los organizadores y administradores pueden editar eventos");
       return;
     }
 
@@ -293,9 +301,8 @@ function AppContent() {
       console.error("Update event error:", error);
       const errorMessage = error.message || "Error al actualizar evento";
 
-      // Extraer mensaje del servidor si existe
       if (errorMessage.includes("403") || errorMessage.includes("permiso")) {
-        toast.error("No tienes permiso para editar este evento. Solo el creador puede modificarlo.");
+        toast.error("No tienes permiso para editar este evento");
       } else if (errorMessage.includes("401")) {
         toast.error("Debes iniciar sesión para editar eventos");
       } else if (errorMessage.includes("404")) {
@@ -312,8 +319,9 @@ function AppContent() {
       return;
     }
 
-    if (user.role !== "organizer") {
-      toast.error(t("message.organizersOnly"));
+    // Permitir eliminar a organizers y admins
+    if (user.role !== "organizer" && user.role !== "admin") {
+      toast.error("Solo los organizadores y administradores pueden eliminar eventos");
       return;
     }
 
@@ -329,9 +337,8 @@ function AppContent() {
       console.error("Delete event error:", error);
       const errorMessage = error.message || "Error al eliminar evento";
 
-      // Extraer mensaje del servidor si existe
       if (errorMessage.includes("403") || errorMessage.includes("permiso")) {
-        toast.error("No tienes permiso para eliminar este evento. Solo el creador puede eliminarlo.");
+        toast.error("No tienes permiso para eliminar este evento");
       } else if (errorMessage.includes("401")) {
         toast.error("Debes iniciar sesión para eliminar eventos");
       } else if (errorMessage.includes("404")) {
@@ -361,7 +368,7 @@ function AppContent() {
   };
 
   const handleNavigate = (view: string) => {
-    if (view === "dashboard" && (!user || user.role !== "organizer")) {
+    if (view === "dashboard" && (!user || (user.role !== "organizer" && user.role !== "admin"))) {
       toast.error(t("message.organizersOnly"));
       return;
     }

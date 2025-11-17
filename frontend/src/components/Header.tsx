@@ -50,7 +50,7 @@ export function Header({ currentView, onNavigate, onOpenLogin, onOpenSignup }: H
               {t("header.home")}
             </Button>
 
-            {user?.role === "organizer" && (
+            {(user?.role === "organizer" || user?.role === "admin") && (
               <Button
                 variant={currentView === "dashboard" ? "default" : "ghost"}
                 onClick={() => onNavigate("dashboard")}

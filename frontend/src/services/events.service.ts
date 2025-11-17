@@ -43,26 +43,26 @@ export interface EventUI {
 // Convertir de formato API a formato UI
 function transformEventFromAPI(apiEvent: EventAPI): EventUI {
   const datetime = new Date(apiEvent.start_datetime);
-  
+
   // Usar los valores calculados del backend
   const ticketsSold = apiEvent.tickets_sold || 0;
-  const availableTickets = apiEvent.available_tickets !== undefined 
-    ? apiEvent.available_tickets 
+  const availableTickets = apiEvent.available_tickets !== undefined
+    ? apiEvent.available_tickets
     : apiEvent.capacity || 0;
-  
+
   return {
     id: apiEvent.id_event.toString(),
     title: apiEvent.title,
     description: apiEvent.description,
     location: apiEvent.location,
-    date: datetime.toLocaleDateString('es-ES', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    date: datetime.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     }),
-    time: datetime.toLocaleTimeString('es-ES', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    time: datetime.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit'
     }),
     price: apiEvent.price,
     category: "Música",
@@ -100,9 +100,11 @@ export const eventsService = {
       start_datetime: `${eventData.date}T${eventData.time}:00`,
       price: parseFloat(eventData.price),
       capacity: parseInt(eventData.totalTickets),
-      organizer_id: 1,
+      // NO ENVIAR organizer_id, solo creator_user_id (se obtiene del token en el backend)
       status: "active",
     };
+
+    console.log("📤 Sending event data to backend:", apiData);
 
     const event = await apiRequest<EventAPI>('/events/', {
       method: 'POST',
@@ -111,6 +113,7 @@ export const eventsService = {
       },
       body: JSON.stringify(apiData),
     });
+
     return transformEventFromAPI(event);
   },
 
@@ -123,7 +126,7 @@ export const eventsService = {
       start_datetime: `${eventData.date}T${eventData.time}:00`,
       price: parseFloat(eventData.price),
       capacity: parseInt(eventData.totalTickets),
-      organizer_id: 1,
+      // NO ENVIAR organizer_id
       status: eventData.status || "active",
     };
 
@@ -134,6 +137,7 @@ export const eventsService = {
       },
       body: JSON.stringify(apiData),
     });
+
     return transformEventFromAPI(event);
   },
 
