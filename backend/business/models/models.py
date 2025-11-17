@@ -23,8 +23,8 @@ class Event(Base):
     __tablename__ = "events"
 
     id_event = Column(Integer, primary_key=True, index=True)
-    organizer_id = Column(Integer, ForeignKey("organizers.id_organizer", ondelete="CASCADE"), nullable=False)
-    creator_user_id = Column(UUID(as_uuid=True), nullable=True, index=True)  # NUEVO: ID del usuario creador
+    organizer_id = Column(Integer, ForeignKey("organizers.id_organizer", ondelete="CASCADE"), nullable=True)  # CAMBIO: nullable=True
+    creator_user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     title = Column(String(150), nullable=False)
     description = Column(Text)
     location = Column(String(150))

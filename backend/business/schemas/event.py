@@ -13,7 +13,7 @@ class EventBase(BaseModel):
     status: Optional[str] = "active"
 
 class EventCreate(EventBase):
-    organizer_id: int
+    organizer_id: Optional[int] = None  # CAMBIO: Ahora es opcional
     creator_user_id: Optional[UUID] = None
 
 class EventUpdate(BaseModel):
@@ -27,10 +27,10 @@ class EventUpdate(BaseModel):
 
 class EventOut(EventBase):
     id_event: int       
-    organizer_id: int
+    organizer_id: Optional[int] = None  # CAMBIO: Ahora es opcional
     creator_user_id: Optional[UUID] = None
     created_at: datetime
-    # NUEVOS CAMPOS - Estadísticas calculadas
+    # Estadísticas calculadas
     tickets_sold: Optional[int] = 0
     available_tickets: Optional[int] = None
     revenue: Optional[float] = 0.0

@@ -11,28 +11,30 @@ def create_event(db: Session, event: EventCreate):
         # Convertir el schema a diccionario para crear el evento
         event_data = event.model_dump()
         
-        # Asegurarse de que creator_user_id sea UUID o string según lo que la BD acepte
+        # Si no hay organizer_id, usar NULL
+        if 'organizer_id' not in event_data or event_data['organizer_id'] is None:
+            event_data['organizer_id'] = None
+        
+        # Asegurarse de que creator_user_id sea UUID
         if 'creator_user_id' in event_data and event_data['creator_user_id']:
             creator_id = event_data['creator_user_id']
             print(f"🔍 Creator user ID recibido: {creator_id} (tipo: {type(creator_id)})")
-            # Si es UUID, mantenerlo; si es string, intentar convertirlo
             if isinstance(creator_id, str):
                 try:
                     event_data['creator_user_id'] = UUID(creator_id)
                     print(f"✅ Convertido a UUID: {event_data['creator_user_id']}")
                 except (ValueError, TypeError):
-                    # Si no se puede convertir, mantener como string (para BD VARCHAR)
-                    print(f"⚠️ Manteniendo como string (BD puede ser VARCHAR): {creator_id}")
+                    print(f"⚠️ Manteniendo como string: {creator_id}")
                     event_data['creator_user_id'] = creator_id
         
-        # Crear el evento con todos los datos incluyendo creator_user_id
+        # Crear el evento
         db_event = Event(**event_data)
         
         db.add(db_event)
         db.commit()
         db.refresh(db_event)
         
-        print(f"✅ Evento creado - ID: {db_event.id_event}, creator_user_id: {db_event.creator_user_id} (tipo: {type(db_event.creator_user_id)})")
+        print(f"✅ Evento creado - ID: {db_event.id_event}, creator_user_id: {db_event.creator_user_id}, organizer_id: {db_event.organizer_id}")
         
         return db_event
     except Exception as e:
